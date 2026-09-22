@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>らくな家計簿</title>
+<meta name="description" content="楽天家計簿(gas/rakuten-ledger)と連携する家計簿アプリ">
+<meta name="theme-color" content="#0f765c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1 id="page-title">ホーム</h1>
+  <button id="settings-btn" class="icon-btn" aria-label="設定" title="設定">⚙</button>
+</header>
+
+<main id="view-home" class="view">
+  <section class="card month-nav">
+    <button id="month-prev" class="icon-btn" aria-label="前の月">←</button>
+    <div id="month-label" class="month-label">----年--月</div>
+    <button id="month-next" class="icon-btn" aria-label="次の月">→</button>
+  </section>
+
+  <section class="card total-card">
+    <div class="total-label">支出合計</div>
+    <div id="home-total" class="total-amount">¥0</div>
+    <div id="home-diff" class="total-diff"></div>
+  </section>
+
+  <section id="budget-card" class="card hidden">
+    <div class="card-title">今月の予算</div>
+    <div class="budget-bar-track"><div id="budget-bar-fill" class="budget-bar-fill"></div></div>
+    <div id="budget-text" class="budget-text"></div>
+  </section>
+
+  <section id="income-card" class="card hidden">
+    <div class="card-title">臨時収入</div>
+    <div id="income-text" class="income-text"></div>
+  </section>
+
+  <section id="uncat-card" class="card notice-card hidden">
+    <div id="uncat-text"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-title">カテゴリ別</div>
+    <div id="category-bars" class="category-bars"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-title">直近の取引</div>
+    <div id="recent-list" class="recent-list"></div>
+  </section>
+</main>
+
+<main id="view-history" class="view hidden">
+  <section class="card">
+    <input id="history-search" type="search" placeholder="利用先・カテゴリで検索" autocomplete="off">
+    <select id="history-category-filter">
+      <option value="">すべてのカテゴリ</option>
+    </select>
+  </section>
+  <section id="history-list" class="history-list"></section>
+</main>
+
+<main id="view-entry" class="view hidden">
+  <section class="card">
+    <div class="type-toggle">
+      <button id="type-expense" class="type-btn on" data-type="expense">支出</button>
+      <button id="type-income" class="type-btn" data-type="income">収入</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div id="amount-display" class="amount-display">¥0</div>
+    <div class="keypad">
+      <button class="key" data-key="7">7</button><button class="key" data-key="8">8</button><button class="key" data-key="9">9</button>
+      <button class="key" data-key="4">4</button><button class="key" data-key="5">5</button><button class="key" data-key="6">6</button>
+      <button class="key" data-key="1">1</button><button class="key" data-key="2">2</button><button class="key" data-key="3">3</button>
+      <button class="key" data-key="00">00</button><button class="key" data-key="0">0</button><button class="key key-back" data-key="back">⌫</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-title" id="category-grid-title">カテゴリ</div>
+    <div id="category-grid" class="category-grid"></div>
+  </section>
+
+  <section class="card">
+    <label class="field-label" id="payee-label">利用先（未入力ならカテゴリ名を使います）</label>
+    <input id="entry-payee" type="text" autocomplete="off" placeholder="例: セブンイレブン">
+
+    <label class="field-label">日付</label>
+    <input id="entry-date" type="date">
+
+    <div id="method-field">
+      <label class="field-label">決済手段</label>
+      <input id="entry-method" type="text" autocomplete="off">
+    </div>
+
+    <label class="field-label">メモ（任意）</label>
+    <input id="entry-memo" type="text" autocomplete="off">
+  </section>
+
+  <button id="entry-save" class="save-btn">保存</button>
+
+  <section class="card">
+    <div class="card-title">今回のセッションで保存した項目</div>
+    <div id="entry-recent" class="recent-list"><div class="empty-note">まだありません</div></div>
+  </section>
+</main>
+
+<main id="view-settings" class="view hidden">
+  <section class="card">
+    <div class="card-title">接続設定</div>
+    <label class="field-label">WebApp URL（/exec で終わるもの）</label>
+    <input id="set-baseurl" type="url" placeholder="https://script.google.com/macros/s/XXXX/exec" autocomplete="off">
+    <label class="field-label">トークン（WEBAPP_TOKEN）</label>
+    <input id="set-token" type="password" autocomplete="off">
+    <button id="set-test" class="secondary-btn">接続テスト</button>
+    <div id="set-test-result" class="test-result"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-title">入力の既定値</div>
+    <label class="field-label">既定の決済手段（支出）</label>
+    <input id="set-method" type="text" autocomplete="off">
+    <label class="field-label">支出カテゴリ（カンマ区切り）</label>
+    <textarea id="set-categories" rows="3"></textarea>
+    <label class="field-label">収入カテゴリ（カンマ区切り）</label>
+    <textarea id="set-income-categories" rows="2"></textarea>
+  </section>
+
+  <button id="set-save" class="save-btn">設定を保存</button>
+</main>
+
+<nav class="bottom-nav">
+  <button data-view="home" class="nav-btn active"><span class="nav-icon">🏠</span><span>ホーム</span></button>
+  <button data-view="history" class="nav-btn"><span class="nav-icon">📜</span><span>履歴</span></button>
+  <button data-view="entry" class="nav-btn"><span class="nav-icon">➕</span><span>入力</span></button>
+</nav>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
