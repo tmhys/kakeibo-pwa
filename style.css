@@ -58,6 +58,9 @@ body {
   border-bottom: 1px solid var(--line);
 }
 .topbar h1 { font-size: 18px; margin: 0; }
+.topbar-actions { display: flex; gap: 8px; }
+#refresh-btn.spinning { animation: spin 1s linear infinite; pointer-events: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .icon-btn {
   width: 36px; height: 36px;
@@ -91,6 +94,7 @@ body {
 .total-diff { font-size: 13px; color: var(--sub); }
 .total-diff.over { color: var(--danger); }
 .total-diff.under { color: var(--income); }
+.sync-note { font-size: 11px; color: var(--sub); margin-top: 6px; }
 
 .budget-bar-track {
   height: 10px; border-radius: 6px; background: var(--accent-weak);
@@ -110,7 +114,10 @@ body {
 }
 
 .category-bars { display: flex; flex-direction: column; gap: 10px; }
-.cat-bar-row { display: flex; flex-direction: column; gap: 4px; }
+.cat-bar-row {
+  display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0;
+  border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
 .cat-bar-head { display: flex; justify-content: space-between; font-size: 13px; }
 .cat-bar-head .amt { font-variant-numeric: tabular-nums; color: var(--sub); }
 .cat-bar-track { height: 8px; border-radius: 5px; background: var(--accent-weak); overflow: hidden; }
@@ -127,6 +134,7 @@ body {
 .row-sub { font-size: 12px; color: var(--sub); }
 .row-amt { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .row-amt.income { color: var(--income); }
+.row-amt.other { color: var(--sub); font-weight: 400; }
 .empty-note { color: var(--sub); font-size: 13px; padding: 8px 0; }
 
 .chip {
@@ -134,12 +142,23 @@ body {
   background: var(--accent-weak); color: var(--accent); margin-right: 4px;
 }
 .chip.uncat { background: var(--danger-weak); color: var(--danger); }
+.chip.other { background: var(--line); color: var(--sub); }
 
 /* --- 履歴 --- */
-#history-search, #history-category-filter {
+#history-search, #view-history select {
   width: 100%; padding: 11px 12px; font-size: 15px; border: 1px solid var(--line);
   border-radius: 8px; background: var(--bg); color: var(--text); margin-bottom: 8px;
 }
+.filter-row { display: flex; gap: 8px; }
+.filter-row select { flex: 1; min-width: 0; }
+.history-summary { font-size: 12px; color: var(--sub); }
+.history-month-head {
+  display: flex; justify-content: space-between; font-size: 15px; font-weight: 700;
+  padding: 18px 4px 2px; font-variant-numeric: tabular-nums;
+}
+.history-month-head:first-child { padding-top: 4px; }
+.history-date-head .plus, .history-month-head .plus { color: var(--income); }
+.history-list > .secondary-btn { width: 100%; margin: 8px 0; }
 .history-date-group { margin-bottom: 4px; }
 .history-date-head {
   display: flex; justify-content: space-between; font-size: 12px; color: var(--sub);

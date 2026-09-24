@@ -9,13 +9,16 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
 <header class="topbar">
   <h1 id="page-title">ホーム</h1>
-  <button id="settings-btn" class="icon-btn" aria-label="設定" title="設定">⚙</button>
+  <div class="topbar-actions">
+    <button id="refresh-btn" class="icon-btn" aria-label="最新にする" title="最新にする">↻</button>
+    <button id="settings-btn" class="icon-btn" aria-label="設定" title="設定">⚙</button>
+  </div>
 </header>
 
 <main id="view-home" class="view">
@@ -29,6 +32,7 @@
     <div class="total-label">支出合計</div>
     <div id="home-total" class="total-amount">¥0</div>
     <div id="home-diff" class="total-diff"></div>
+    <div id="sync-note" class="sync-note"></div>
   </section>
 
   <section id="budget-card" class="card hidden">
@@ -47,7 +51,7 @@
   </section>
 
   <section class="card">
-    <div class="card-title">カテゴリ別</div>
+    <div class="card-title">カテゴリ別（タップで履歴）</div>
     <div id="category-bars" class="category-bars"></div>
   </section>
 
@@ -59,10 +63,22 @@
 
 <main id="view-history" class="view hidden">
   <section class="card">
-    <input id="history-search" type="search" placeholder="利用先・カテゴリで検索" autocomplete="off">
-    <select id="history-category-filter">
+    <input id="history-search" type="search" placeholder="利用先・カテゴリ・メモで検索" autocomplete="off">
+    <div class="filter-row">
+      <select id="history-month-filter" aria-label="期間">
+        <option value="">すべての期間</option>
+      </select>
+      <select id="history-type-filter" aria-label="種別">
+        <option value="io">支出と収入</option>
+        <option value="expense">支出のみ</option>
+        <option value="income">収入のみ</option>
+        <option value="all">振替・集計も含む</option>
+      </select>
+    </div>
+    <select id="history-category-filter" aria-label="カテゴリ">
       <option value="">すべてのカテゴリ</option>
     </select>
+    <div id="history-summary" class="history-summary"></div>
   </section>
   <section id="history-list" class="history-list"></section>
 </main>
@@ -146,6 +162,6 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>
