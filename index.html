@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -65,7 +65,7 @@
   <section class="card">
     <input id="history-search" type="search" placeholder="利用先・カテゴリ・メモで検索" autocomplete="off">
     <div class="filter-row">
-      <select id="history-month-filter" aria-label="期間">
+      <select id="history-month-filter" aria-label="月">
         <option value="">すべての期間</option>
       </select>
       <select id="history-type-filter" aria-label="種別">
@@ -78,9 +78,92 @@
     <select id="history-category-filter" aria-label="カテゴリ">
       <option value="">すべてのカテゴリ</option>
     </select>
+    <div class="filter-actions">
+      <button id="history-adv-toggle" class="link-btn plain">▸ 詳細な条件</button>
+      <button id="history-reset" class="link-btn plain">条件をクリア</button>
+    </div>
+    <div id="history-adv" class="hidden">
+      <div class="filter-row">
+        <label class="mini-field">いつから<input id="history-from" type="date"></label>
+        <label class="mini-field">いつまで<input id="history-to" type="date"></label>
+      </div>
+      <div class="filter-row">
+        <label class="mini-field">金額（以上）<input id="history-min" type="number" inputmode="numeric" min="0" placeholder="¥"></label>
+        <label class="mini-field">金額（以下）<input id="history-max" type="number" inputmode="numeric" min="0" placeholder="¥"></label>
+      </div>
+      <div class="filter-row">
+        <select id="history-method-filter" aria-label="決済手段">
+          <option value="">すべての決済手段</option>
+        </select>
+        <select id="history-sort" aria-label="並び順">
+          <option value="date">新しい順</option>
+          <option value="amount">金額の大きい順</option>
+        </select>
+      </div>
+    </div>
     <div id="history-summary" class="history-summary"></div>
   </section>
+  <section id="history-trend-card" class="card hidden">
+    <div class="card-title">この条件の月別推移<span class="title-note">（棒をタップでその月へ）</span></div>
+    <div id="history-trend" class="chart"></div>
+    <div id="history-trend-note" class="chart-note"></div>
+  </section>
   <section id="history-list" class="history-list"></section>
+</main>
+
+<main id="view-analysis" class="view hidden">
+  <section class="card">
+    <input id="analysis-search" type="search" placeholder="お店・メモで絞る（例: Amazon）" autocomplete="off">
+    <div class="filter-row">
+      <select id="analysis-range" aria-label="期間">
+        <option value="12">直近12か月</option>
+        <option value="24">直近24か月</option>
+        <option value="all">全期間</option>
+      </select>
+      <select id="analysis-category" aria-label="カテゴリ">
+        <option value="">すべてのカテゴリ</option>
+      </select>
+    </div>
+  </section>
+  <div id="analysis-empty" class="card hidden"><div class="empty-note">データがありません</div></div>
+  <div id="analysis-body">
+    <section class="card">
+      <div class="card-title" id="analysis-trend-title">月別の支出</div>
+      <div id="analysis-trend" class="chart"></div>
+      <div id="analysis-trend-note" class="chart-note"></div>
+    </section>
+    <section class="card">
+      <div class="card-title-row">
+        <div class="card-title" id="analysis-month-title">内訳</div>
+        <button id="analysis-open-history" class="link-btn plain">明細を見る →</button>
+      </div>
+      <div id="analysis-month-note" class="chart-note top"></div>
+      <div id="analysis-categories" class="category-bars"></div>
+    </section>
+    <section class="card">
+      <div class="card-title" id="analysis-shops-title">よく使うお店</div>
+      <div id="analysis-shops" class="category-bars"></div>
+    </section>
+    <section class="card">
+      <div class="card-title">曜日別（1日あたり平均）</div>
+      <div id="analysis-dow" class="category-bars"></div>
+    </section>
+  </div>
+</main>
+
+<main id="view-review" class="view hidden">
+  <section class="card">
+    <div id="review-mode" class="type-toggle">
+      <button class="type-btn on" data-mode="month">月次</button>
+      <button class="type-btn" data-mode="quarter">四半期</button>
+    </div>
+    <div class="month-nav review-nav">
+      <button id="review-prev" class="icon-btn" aria-label="前へ">←</button>
+      <div id="review-label" class="month-label"></div>
+      <button id="review-next" class="icon-btn" aria-label="次へ">→</button>
+    </div>
+  </section>
+  <div id="review-body"></div>
 </main>
 
 <main id="view-entry" class="view hidden">
@@ -157,11 +240,14 @@
 <nav class="bottom-nav">
   <button data-view="home" class="nav-btn active"><span class="nav-icon">🏠</span><span>ホーム</span></button>
   <button data-view="history" class="nav-btn"><span class="nav-icon">📜</span><span>履歴</span></button>
+  <button data-view="analysis" class="nav-btn"><span class="nav-icon">📊</span><span>分析</span></button>
+  <button data-view="review" class="nav-btn"><span class="nav-icon">📝</span><span>レビュー</span></button>
   <button data-view="entry" class="nav-btn"><span class="nav-icon">➕</span><span>入力</span></button>
 </nav>
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
+<script src="analysis.js?v=3"></script>
 </body>
 </html>
