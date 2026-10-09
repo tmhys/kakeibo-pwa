@@ -111,10 +111,14 @@ async function apiGetAll(override) {
   return data;
 }
 
-async function apiPostManualEntry(payload) {
+function apiPostManualEntry(payload) {
+  return apiPost('manual-entry', payload);
+}
+
+async function apiPost(action, payload) {
   const s = getSettings();
   if (!s.baseUrl || !s.token) throw new Error('設定画面でWebApp URLとトークンを入力してください');
-  const body = Object.assign({ action: 'manual-entry', token: s.token }, payload);
+  const body = Object.assign({ action, token: s.token }, payload);
   let res;
   try {
     // text/plain にすることでCORSプリフライト(OPTIONS)を起こさない。
@@ -311,7 +315,7 @@ function refreshData() {
 // 画面切り替え
 // ---------------------------------------------------------------------------
 
-const VIEW_TITLES = { home: 'ホーム', history: '履歴', analysis: '分析', review: 'レビュー', entry: '入力', settings: '設定' };
+const VIEW_TITLES = { home: 'ホーム', history: '履歴', analysis: '分析', review: 'レビュー', entry: '入力', import: '銀行明細の取り込み', settings: '設定' };
 let currentView = 'home';
 
 function showView(name) {
@@ -324,13 +328,14 @@ function showView(name) {
   });
   document.getElementById('page-title').textContent = VIEW_TITLES[name] || '';
 
-  if (['home', 'history', 'analysis', 'review'].includes(name) && !isConfigured()) {
+  if (['home', 'history', 'analysis', 'review', 'import'].includes(name) && !isConfigured()) {
     showToast('設定画面でWebApp URLとトークンを入力してください', 'ng');
     showView('settings');
     return;
   }
   if (name === 'entry') initEntryView();
   if (name === 'settings') initSettingsView();
+  if (name === 'import') initImportView();
   renderCurrentView();
   window.scrollTo(0, 0);
 }

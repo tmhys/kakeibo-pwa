@@ -294,3 +294,18 @@ textarea { resize: vertical; }
 .review-table td.down { color: var(--income); }
 .review-table tbody tr { cursor: pointer; }
 .bottom-nav .nav-btn span:last-child { font-size: 11px; }
+
+/* --- 銀行明細の取り込み --- */
+.import-link-card { padding: 10px 16px; }
+.help-text { font-size: 12px; color: var(--sub); line-height: 1.6; margin: 0 0 10px; }
+#import-hint, .import-type {
+  padding: 8px 10px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--text);
+}
+#import-hint { width: 100%; margin-bottom: 10px; }
+#import-file { width: 100%; font-size: 14px; color: var(--text); }
+.mini-check { font-size: 12px; color: var(--sub); display: flex; align-items: center; gap: 4px; }
+.import-list { padding: 4px 16px; }
+.import-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.import-type { padding: 4px 6px; font-size: 13px; }
+.import-row.done, .import-row.skipped { opacity: .55; }

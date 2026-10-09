@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -167,6 +167,9 @@
 </main>
 
 <main id="view-entry" class="view hidden">
+  <section class="card import-link-card">
+    <button id="open-import" class="link-btn plain">🏦 銀行の入出金明細（CSV）を取り込む →</button>
+  </section>
   <section class="card">
     <div class="type-toggle">
       <button id="type-expense" class="type-btn on" data-type="expense">支出</button>
@@ -213,6 +216,33 @@
   </section>
 </main>
 
+<main id="view-import" class="view hidden">
+  <section class="card">
+    <div class="card-title">入出金明細CSVを選ぶ</div>
+    <p class="help-text">楽天銀行・三菱UFJ銀行のサイトで「入出金明細」をCSVでダウンロードして選んでください。
+      1万円以上の取引は Zaim のメール経由で自動で入っているので、重複は自動で除きます。</p>
+    <select id="import-hint" aria-label="銀行">
+      <option value="">銀行を自動で判定</option>
+      <option value="rakuten">楽天銀行</option>
+      <option value="mufg">三菱UFJ銀行</option>
+    </select>
+    <input id="import-file" type="file" accept=".csv,text/csv,text/comma-separated-values,application/vnd.ms-excel">
+    <div id="import-status" class="test-result"></div>
+  </section>
+  <section id="import-preview" class="hidden">
+    <section class="card">
+      <div class="card-title-row">
+        <div class="card-title" id="import-title">確認</div>
+        <label class="mini-check"><input id="import-only-new" type="checkbox" checked>新規だけ表示</label>
+      </div>
+      <div id="import-summary" class="history-summary"></div>
+      <p class="help-text">種別が違うものは選び直してください。カード引落し・自分の口座間の移動・ATMは「振替」（支出に数えない）にします。</p>
+    </section>
+    <section id="import-list" class="card import-list"></section>
+    <button id="import-commit" class="save-btn">取り込む</button>
+  </section>
+</main>
+
 <main id="view-settings" class="view hidden">
   <section class="card">
     <div class="card-title">接続設定</div>
@@ -247,7 +277,8 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js?v=3"></script>
-<script src="analysis.js?v=3"></script>
+<script src="app.js?v=4"></script>
+<script src="analysis.js?v=4"></script>
+<script src="import.js?v=4"></script>
 </body>
 </html>
