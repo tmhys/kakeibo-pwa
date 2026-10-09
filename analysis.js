@@ -6,7 +6,7 @@
  *
  * レビューのコメントは決まった規則で出す（平均との差・定期払い・大きな買い物など）。
  * 文章での振り返りや「もっと安く買う方法」の提案は、月1回 Claude が Obsidian の
- * 月次ノート（tmhys/github_obsidian の 01_Log/03_Money/）に書く。
+ * 月次ノート（tmhys/github_obsidian の 01_Log/03_Money/）に書く（毎月16日）。
  */
 
 // ---------------------------------------------------------------------------
@@ -337,14 +337,17 @@ function baselinePeriods(key, mode) {
 function findRecurring(endYm) {
   const yms = monthRange(ymAdd(endYm, -3), endYm); // 直近4か月
   const per = new Map(); // payee -> Map(ym -> amount)
+  const count = new Map();
   expensesIn(yms).forEach((t) => {
     if (!per.has(t.payee)) per.set(t.payee, new Map());
     const m = per.get(t.payee);
     m.set(t.ym, (m.get(t.ym) || 0) + t.amount);
+    count.set(t.payee, (count.get(t.payee) || 0) + 1);
   });
   const out = [];
   per.forEach((m, payee) => {
-    if (m.size < 3) return;
+    // 月1〜2回の支払いだけ。スーパーのように何度も行く店は月の合計が安定していても除く
+    if (m.size < 3 || count.get(payee) > 2 * m.size) return;
     const vals = Array.from(m.values());
     const mean = vals.reduce((a, v) => a + v, 0) / vals.length;
     const spread = Math.max(...vals) - Math.min(...vals);
@@ -494,7 +497,7 @@ function renderReview() {
     '<div class="total-amount">' + yen(r.total) + '</div>' +
     '<div class="review-compare">' +
     '<span>前' + unit + ' ' + yen(r.prevTotal) + '（' + signedYen(r.total - r.prevTotal) + '）</span>' +
-    (r.bases.length ? '<span>直近' + r.bases.length + unit + '平均 ' + yen(Math.round(r.baseAvg)) + '（' + signedYen(Math.round(r.total - r.baseAvg)) + '）</span>' : '') +
+    (r.bases.length ? '<span>直近' + r.bases.length + (review.mode === 'month' ? 'か月' : '四半期') + '平均 ' + yen(Math.round(r.baseAvg)) + '（' + signedYen(Math.round(r.total - r.baseAvg)) + '）</span>' : '') +
     '</div></section>');
 
   parts.push('<section class="card"><div class="card-title">コメント</div><div class="review-comments">' +
@@ -503,7 +506,7 @@ function renderReview() {
       '<span class="text">' + escapeHtml(c.text) +
       (c.action ? ' <button class="link-btn" data-c="' + i + '">履歴で見る</button>' : '') + '</span></div>'
     ).join('') + '</div>' +
-    '<div class="review-foot">文章での振り返りと「もっと安く買う方法」の提案は、毎月1日に Claude が Obsidian の月次ノート（01_Log/03_Money）に書きます。</div></section>');
+    '<div class="review-foot">文章での振り返りと「もっと安く買う方法」の提案は、毎月16日に Claude が Obsidian の月次ノート（01_Log/03_Money）に書きます（楽天カードの確定待ちのため16日）。</div></section>');
 
   parts.push('<section class="card"><div class="card-title">カテゴリ別（平均との差）</div>' +
     '<table class="review-table"><thead><tr><th>カテゴリ</th><th>今' + unit + '</th><th>平均</th><th>差</th></tr></thead><tbody>' +
