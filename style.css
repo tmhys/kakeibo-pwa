@@ -6,6 +6,8 @@
   --sub: #6b7280;
   --accent: #0f765c;
   --accent-weak: #e3f3ee;
+  --bar: #7db9a7;
+  --grid: #eef0f3;
   --danger: #b3261e;
   --danger-weak: #fdecea;
   --income: #1a7f37;
@@ -23,6 +25,8 @@
     --sub: #9aa4b2;
     --accent: #2bb08a;
     --accent-weak: #123028;
+    --bar: #2c7a63;
+    --grid: #232a31;
     --danger: #ff6b60;
     --danger-weak: #3a1a18;
     --income: #4ad07c;
@@ -145,7 +149,8 @@ body {
 .chip.other { background: var(--line); color: var(--sub); }
 
 /* --- 履歴 --- */
-#history-search, #view-history select {
+#history-search, #view-history select, #analysis-search, #view-analysis select,
+.mini-field input {
   width: 100%; padding: 11px 12px; font-size: 15px; border: 1px solid var(--line);
   border-radius: 8px; background: var(--bg); color: var(--text); margin-bottom: 8px;
 }
@@ -236,3 +241,56 @@ textarea { resize: vertical; }
 .toast.hidden { display: none; }
 
 .hidden { display: none !important; }
+
+/* --- フィルタ --- */
+.filter-actions { display: flex; justify-content: space-between; margin: 0 0 8px; }
+.link-btn.plain {
+  background: none; border: none; padding: 4px 0; font-size: 13px; color: var(--accent); cursor: pointer;
+}
+.mini-field { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 11px; color: var(--sub); gap: 4px; }
+.mini-field input { margin-bottom: 8px; }
+.card-title-row { display: flex; justify-content: space-between; align-items: baseline; }
+.title-note { font-weight: 400; margin-left: 4px; }
+
+/* --- グラフ --- */
+.chart { position: relative; width: 100%; padding-top: 26px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .bar { fill: var(--bar); }
+.chart .bar.selected { fill: var(--accent); }
+.chart .grid { stroke: var(--grid); stroke-width: 1; }
+.chart .baseline { stroke: var(--line); stroke-width: 1; }
+.chart .avg { stroke: var(--sub); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.chart .axis { fill: var(--sub); font-size: 10px; font-variant-numeric: tabular-nums; }
+.chart .hit { fill: transparent; cursor: pointer; }
+.chart-tip {
+  position: absolute; top: 0; padding: 3px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap;
+  background: var(--text); color: var(--card); pointer-events: none; font-variant-numeric: tabular-nums;
+}
+.chart-note { font-size: 12px; color: var(--sub); margin-top: 6px; }
+.chart-note.top { margin: -4px 0 10px; }
+.cat-bar-head .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cat-bar-head .amt { white-space: nowrap; }
+.cat-bar-head .sub { font-size: 11px; }
+
+/* --- レビュー --- */
+.review-nav { padding: 10px 0 0; }
+.review-compare { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--sub); }
+.review-comments { display: flex; flex-direction: column; gap: 10px; }
+.review-comment { display: flex; gap: 8px; font-size: 13px; line-height: 1.6; }
+.review-comment .icon { flex: none; width: 1.4em; text-align: center; font-weight: 700; }
+.review-comment.warn .icon { color: var(--danger); }
+.review-comment.good .icon { color: var(--income); }
+.review-comment.info .icon { color: var(--sub); }
+.review-comment .link-btn {
+  background: none; border: none; padding: 0; font-size: 12px; color: var(--accent); text-decoration: underline; cursor: pointer;
+}
+.review-foot { font-size: 11px; color: var(--sub); margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+.review-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.review-table th { font-size: 11px; color: var(--sub); font-weight: 600; text-align: right; padding: 4px 0; }
+.review-table th:first-child, .review-table td:first-child { text-align: left; }
+.review-table td { text-align: right; padding: 7px 0; border-top: 1px solid var(--line); white-space: nowrap; }
+.review-table td:first-child { max-width: 8em; overflow: hidden; text-overflow: ellipsis; }
+.review-table td.up { color: var(--danger); font-weight: 600; }
+.review-table td.down { color: var(--income); }
+.review-table tbody tr { cursor: pointer; }
+.bottom-nav .nav-btn span:last-child { font-size: 11px; }

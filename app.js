@@ -311,7 +311,7 @@ function refreshData() {
 // 画面切り替え
 // ---------------------------------------------------------------------------
 
-const VIEW_TITLES = { home: 'ホーム', history: '履歴', entry: '入力', settings: '設定' };
+const VIEW_TITLES = { home: 'ホーム', history: '履歴', analysis: '分析', review: 'レビュー', entry: '入力', settings: '設定' };
 let currentView = 'home';
 
 function showView(name) {
@@ -324,7 +324,7 @@ function showView(name) {
   });
   document.getElementById('page-title').textContent = VIEW_TITLES[name] || '';
 
-  if ((name === 'home' || name === 'history') && !isConfigured()) {
+  if (['home', 'history', 'analysis', 'review'].includes(name) && !isConfigured()) {
     showToast('設定画面でWebApp URLとトークンを入力してください', 'ng');
     showView('settings');
     return;
@@ -338,6 +338,8 @@ function showView(name) {
 function renderCurrentView() {
   if (currentView === 'home') renderHome();
   if (currentView === 'history') renderHistory();
+  if (currentView === 'analysis') renderAnalysis();
+  if (currentView === 'review') renderReview();
 }
 
 // ---------------------------------------------------------------------------
@@ -462,8 +464,9 @@ document.getElementById('category-bars').addEventListener('click', (e) => {
 let historyOptionsDirty = true;
 let historyFiltered = [];
 let historyRendered = 0;
-let historyTotals = null; // {day: Map, month: Map}
+let historyTotals = null; // {day: Map, mon: Map}
 let historyObserver = null;
+let historyChartYm = ''; // 推移グラフで選んだ月（一覧の該当月へ飛ぶ用）
 
 const TYPE_FILTERS = {
   io: (t) => t.type !== '振替' && t.type !== '集計',
@@ -472,33 +475,71 @@ const TYPE_FILTERS = {
   all: () => true,
 };
 
+const HISTORY_FIELDS = ['history-search', 'history-month-filter', 'history-type-filter', 'history-category-filter',
+  'history-method-filter', 'history-from', 'history-to', 'history-min', 'history-max', 'history-sort'];
+
+function fillSelect(sel, values, allLabel, labelOf) {
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">' + allLabel + '</option>' +
+    values.map((v) => '<option value="' + escapeHtml(v) + '">' + escapeHtml(labelOf ? labelOf(v) : v) + '</option>').join('');
+  if (values.includes(cur)) sel.value = cur;
+}
+
 function populateHistoryOptions() {
   if (!historyOptionsDirty || !store.txs) return;
   historyOptionsDirty = false;
-
-  const catSel = document.getElementById('history-category-filter');
-  const curCat = catSel.value;
-  const cats = Array.from(new Set(store.txs.map((t) => t.category))).sort((a, b) => a.localeCompare(b, 'ja'));
-  catSel.innerHTML = '<option value="">すべてのカテゴリ</option>' +
-    cats.map((c) => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
-  if (cats.includes(curCat)) catSel.value = curCat;
-
-  const monthSel = document.getElementById('history-month-filter');
-  const curMonth = monthSel.value;
-  const months = Array.from(store.byMonth.keys()); // 新しい順
-  monthSel.innerHTML = '<option value="">すべての期間</option>' +
-    months.map((m) => '<option value="' + m + '">' + ymLabel(m) + '</option>').join('');
-  if (months.includes(curMonth)) monthSel.value = curMonth;
+  const byJa = (a, b) => a.localeCompare(b, 'ja');
+  fillSelect(document.getElementById('history-category-filter'),
+    Array.from(new Set(store.txs.map((t) => t.category))).sort(byJa), 'すべてのカテゴリ');
+  fillSelect(document.getElementById('history-method-filter'),
+    Array.from(new Set(store.txs.map((t) => t.method).filter(Boolean))).sort(byJa), 'すべての決済手段');
+  fillSelect(document.getElementById('history-month-filter'),
+    Array.from(store.byMonth.keys()), 'すべての期間', ymLabel); // byMonth は新しい順
 }
 
+/** 他の画面から条件つきで履歴を開く。指定しなかった条件はリセットする。 */
 function openHistoryWith(f) {
   showView('history');
   populateHistoryOptions();
-  document.getElementById('history-search').value = '';
-  document.getElementById('history-month-filter').value = f.month || '';
-  document.getElementById('history-category-filter').value = f.category || '';
-  document.getElementById('history-type-filter').value = f.type || 'io';
+  const defaults = { 'history-type-filter': 'io', 'history-sort': 'date' };
+  HISTORY_FIELDS.forEach((id) => { document.getElementById(id).value = defaults[id] || ''; });
+  const map = {
+    search: 'history-search', month: 'history-month-filter', category: 'history-category-filter',
+    type: 'history-type-filter', method: 'history-method-filter', from: 'history-from', to: 'history-to',
+  };
+  Object.keys(map).forEach((k) => { if (f[k]) document.getElementById(map[k]).value = f[k]; });
+  document.getElementById('history-adv').classList.add('hidden'); // 使っていれば sync が開き直す
+  syncAdvancedToggle();
   renderHistory();
+}
+
+function readHistoryFilters() {
+  const v = (id) => document.getElementById(id).value;
+  return {
+    q: v('history-search').trim().toLowerCase(),
+    month: v('history-month-filter'),
+    cat: v('history-category-filter'),
+    method: v('history-method-filter'),
+    from: v('history-from'),
+    to: v('history-to'),
+    min: v('history-min') === '' ? null : Number(v('history-min')),
+    max: v('history-max') === '' ? null : Number(v('history-max')),
+    sort: v('history-sort') || 'date',
+    typeOk: TYPE_FILTERS[v('history-type-filter')] || TYPE_FILTERS.io,
+  };
+}
+
+/** 詳細フィルタ（期間・金額・決済手段・並び順）が使われているか */
+function advancedActive() {
+  const f = readHistoryFilters();
+  return !!(f.method || f.from || f.to || f.min != null || f.max != null || f.sort !== 'date');
+}
+
+function syncAdvancedToggle() {
+  const btn = document.getElementById('history-adv-toggle');
+  const panel = document.getElementById('history-adv');
+  if (advancedActive()) panel.classList.remove('hidden');
+  btn.textContent = (panel.classList.contains('hidden') ? '▸ ' : '▾ ') + '詳細な条件' + (advancedActive() ? '（使用中）' : '');
 }
 
 function renderHistory() {
@@ -512,14 +553,20 @@ function renderHistory() {
   }
   populateHistoryOptions();
 
-  const q = document.getElementById('history-search').value.trim().toLowerCase();
-  const month = document.getElementById('history-month-filter').value;
-  const cat = document.getElementById('history-category-filter').value;
-  const typeOk = TYPE_FILTERS[document.getElementById('history-type-filter').value] || TYPE_FILTERS.io;
-  const source = month ? (store.byMonth.get(month) || []) : store.txs;
-
+  const f = readHistoryFilters();
+  const source = f.month ? (store.byMonth.get(f.month) || []) : store.txs;
   historyFiltered = source.filter((t) =>
-    typeOk(t) && (!cat || t.category === cat) && (!q || t.search.includes(q)));
+    f.typeOk(t) &&
+    (!f.cat || t.category === f.cat) &&
+    (!f.method || t.method === f.method) &&
+    (!f.from || t.date >= f.from) &&
+    (!f.to || t.date <= f.to) &&
+    (f.min == null || t.amount >= f.min) &&
+    (f.max == null || t.amount <= f.max) &&
+    (!f.q || t.search.includes(f.q)));
+  if (f.sort === 'amount') {
+    historyFiltered = historyFiltered.slice().sort((a, b) => b.amount - a.amount);
+  }
 
   // 日・月ごとの合計は絞り込み後の全件で先に出しておく（描画は分割するため）
   const day = new Map();
@@ -542,6 +589,9 @@ function renderHistory() {
     .concat(incomeAll ? ['収入 ' + yen(incomeAll)] : [])
     .join(' · ');
 
+  renderHistoryTrend(f, mon);
+  syncAdvancedToggle();
+
   listEl.innerHTML = '';
   historyRendered = 0;
   if (!historyFiltered.length) {
@@ -551,15 +601,52 @@ function renderHistory() {
   renderHistoryChunk();
 }
 
+/**
+ * 絞り込んだ結果の月別推移。「Amazon でいつ・いくら使ったか」のような調べ物用。
+ * 何も絞っていないとき（＝全支出）や単月指定のときは出さない（ホーム・分析と同じになるため）。
+ */
+function renderHistoryTrend(f, mon) {
+  const card = document.getElementById('history-trend-card');
+  const narrowed = f.q || f.cat || f.method || f.min != null || f.max != null;
+  if (!narrowed || f.month || mon.size < 2) {
+    card.classList.add('hidden');
+    return;
+  }
+  card.classList.remove('hidden');
+  const yms = Array.from(mon.keys()).sort();
+  const series = monthRange(yms[0], yms[yms.length - 1]).map((ym) => ({
+    key: ym, label: ym, value: (mon.get(ym) || { out: 0 }).out,
+  }));
+  const months = series.length;
+  const total = series.reduce((a, s) => a + s.value, 0);
+  document.getElementById('history-trend-note').textContent =
+    '月平均 ' + yen(Math.round(total / months)) + '（' + months + 'か月）';
+  barChart(document.getElementById('history-trend'), series, {
+    selected: historyChartYm,
+    tip: (s) => ymLabel(s.key) + ' ' + yen(s.value),
+    onSelect: (s) => {
+      historyChartYm = s.key;
+      // 並びが日付順なら、その月の見出しまで描画してからスクロールする
+      if (f.sort !== 'date') return;
+      while (!document.querySelector('[data-month-head="' + s.key + '"]') && historyRendered < historyFiltered.length) {
+        renderHistoryChunk();
+      }
+      const head = document.querySelector('[data-month-head="' + s.key + '"]');
+      if (head) head.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+  });
+}
+
 function totalsHtml(t) {
   return '<span>' + (t.out ? yen(t.out) : '') +
     (t.in ? ' <span class="plus">+' + yen(t.in) + '</span>' : '') + '</span>';
 }
 
-function historyRowHtml(t) {
+function historyRowHtml(t, withDate) {
   const isIncome = t.type === '収入';
   const isOther = !isIncome && !isExpense(t);
-  const sub = (isOther ? '<span class="chip other">' + escapeHtml(t.type) + '</span>' : '') +
+  const sub = (withDate ? escapeHtml(ymdLabel(t.date)) + ' ' : '') +
+    (isOther ? '<span class="chip other">' + escapeHtml(t.type) + '</span>' : '') +
     '<span class="chip' + (t.category === '未分類' ? ' uncat' : '') + '">' + escapeHtml(t.category) + '</span>' +
     escapeHtml(t.method) + (t.memo ? ' · ' + escapeHtml(t.memo) : '');
   return '<div class="history-row"><div class="row-main"><div class="row-payee">' + escapeHtml(t.payee) + '</div>' +
@@ -576,22 +663,31 @@ function renderHistoryChunk() {
   const list = historyFiltered;
   let i = historyRendered;
   const html = [];
-  let lastYm = i > 0 ? list[i - 1].ym : '';
-  // 1日分はまとめて描くので、区切りは必ず日付の境目になる
-  while (i < list.length && i - historyRendered < HISTORY_CHUNK) {
-    const date = list[i].date;
-    if (list[i].ym !== lastYm) {
-      lastYm = list[i].ym;
-      html.push('<div class="history-month-head"><span>' + ymLabel(lastYm) + '</span>' +
-        totalsHtml(historyTotals.mon.get(lastYm) || {}) + '</div>');
+
+  if (readHistoryFilters().sort === 'amount') {
+    // 金額順は日付でまとめられないので、日付つきの1枚のリストにする
+    html.push('<div class="card">');
+    const end = Math.min(list.length, i + HISTORY_CHUNK);
+    for (; i < end; i++) html.push(historyRowHtml(list[i], true));
+    html.push('</div>');
+  } else {
+    let lastYm = i > 0 ? list[i - 1].ym : '';
+    // 1日分はまとめて描くので、区切りは必ず日付の境目になる
+    while (i < list.length && i - historyRendered < HISTORY_CHUNK) {
+      const date = list[i].date;
+      if (list[i].ym !== lastYm) {
+        lastYm = list[i].ym;
+        html.push('<div class="history-month-head" data-month-head="' + lastYm + '"><span>' + ymLabel(lastYm) + '</span>' +
+          totalsHtml(historyTotals.mon.get(lastYm) || {}) + '</div>');
+      }
+      html.push('<div class="history-date-group"><div class="history-date-head"><span>' + ymdLabel(date) + '</span>' +
+        totalsHtml(historyTotals.day.get(date) || {}) + '</div><div class="card">');
+      while (i < list.length && list[i].date === date) {
+        html.push(historyRowHtml(list[i], false));
+        i++;
+      }
+      html.push('</div></div>');
     }
-    html.push('<div class="history-date-group"><div class="history-date-head"><span>' + ymdLabel(date) + '</span>' +
-      totalsHtml(historyTotals.day.get(date) || {}) + '</div><div class="card">');
-    while (i < list.length && list[i].date === date) {
-      html.push(historyRowHtml(list[i]));
-      i++;
-    }
-    html.push('</div></div>');
   }
   historyRendered = i;
   listEl.insertAdjacentHTML('beforeend', html.join(''));
@@ -615,14 +711,21 @@ function renderHistoryChunk() {
   }
 }
 
-let historySearchTimer = null;
-document.getElementById('history-search').addEventListener('input', () => {
-  clearTimeout(historySearchTimer);
-  historySearchTimer = setTimeout(renderHistory, 150);
+let historyInputTimer = null;
+HISTORY_FIELDS.forEach((id) => {
+  const el = document.getElementById(id);
+  const isText = el.tagName === 'INPUT' && el.type !== 'date';
+  el.addEventListener(isText ? 'input' : 'change', () => {
+    historyChartYm = '';
+    clearTimeout(historyInputTimer);
+    historyInputTimer = setTimeout(renderHistory, isText ? 200 : 0);
+  });
 });
-['history-month-filter', 'history-category-filter', 'history-type-filter'].forEach((id) => {
-  document.getElementById(id).addEventListener('change', renderHistory);
+document.getElementById('history-adv-toggle').addEventListener('click', () => {
+  document.getElementById('history-adv').classList.toggle('hidden');
+  syncAdvancedToggle();
 });
+document.getElementById('history-reset').addEventListener('click', () => openHistoryWith({}));
 
 // ---------------------------------------------------------------------------
 // 入力
