@@ -8,6 +8,8 @@
   --accent-weak: #e3f3ee;
   --bar: #7db9a7;
   --grid: #eef0f3;
+  --prev-line: #9aa3ad;
+  --warn: #b7791f;
   --danger: #b3261e;
   --danger-weak: #fdecea;
   --income: #1a7f37;
@@ -27,6 +29,8 @@
     --accent-weak: #123028;
     --bar: #2c7a63;
     --grid: #232a31;
+    --prev-line: #6b7480;
+    --warn: #e0a43a;
     --danger: #ff6b60;
     --danger-weak: #3a1a18;
     --income: #4ad07c;
@@ -200,7 +204,7 @@ body {
 .cat-btn.selected { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
 
 .field-label { display: block; font-size: 12px; color: var(--sub); margin: 12px 0 6px; }
-input[type="text"], input[type="date"], input[type="url"], input[type="password"], textarea {
+input[type="text"], input[type="date"], input[type="url"], input[type="password"], #set-budget-total, textarea {
   width: 100%; padding: 12px; font-size: 15px; border: 1px solid var(--line);
   border-radius: 8px; background: var(--bg); color: var(--text); font-family: inherit;
 }
@@ -309,3 +313,106 @@ textarea { resize: vertical; }
 .import-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .import-type { padding: 4px 6px; font-size: 13px; }
 .import-row.done, .import-row.skipped { opacity: .55; }
+
+/* --- ホーム: ペース・今日使えるお金・カテゴリ予算 --- */
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--sub); margin-bottom: 2px; }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 16px; height: 0; border-top: 2px solid; display: inline-block; }
+.swatch.cur { border-color: var(--accent); }
+.swatch.prev { border-color: var(--prev-line); }
+.swatch.budget { border-color: var(--sub); border-top-style: dashed; }
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .line.cur { stroke: var(--accent); }
+.chart .line.prev { stroke: var(--prev-line); }
+.chart .line.budget { stroke: var(--sub); stroke-width: 1.5; }
+.chart .line.dashed { stroke-dasharray: 5 4; }
+.chart .dot.cur { fill: var(--accent); stroke: var(--card); stroke-width: 2; }
+.chart .crosshair { stroke: var(--sub); stroke-width: 1; }
+.chart .crosshair.hidden { display: none; }
+.allowance-card { text-align: center; padding: 14px 16px; }
+.allow-label { font-size: 12px; color: var(--sub); }
+.allow-amount { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); }
+.allow-amount.over { color: var(--danger); }
+.allow-sub { font-size: 12px; color: var(--sub); }
+.budget-track { position: relative; overflow: visible; }
+.cat-bar-fill.fast { background: var(--warn); }
+.cat-bar-fill.over { background: var(--danger); }
+.pace-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); opacity: .45; border-radius: 1px; }
+.cat-budget-sub { font-size: 11px; color: var(--sub); text-align: right; }
+
+/* --- 履歴: カレンダー --- */
+.type-toggle.compact { margin-bottom: 10px; }
+.type-toggle.compact .type-btn { padding: 8px; font-size: 14px; }
+.cal-nav { padding: 0 0 10px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-head { text-align: center; font-size: 11px; color: var(--sub); padding: 2px 0 4px; }
+.cal-head.sun { color: var(--danger); }
+.cal-head.sat { color: var(--accent); }
+.cal-cell {
+  min-height: 52px; border-radius: 8px; border: 1px solid transparent; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 4px 1px;
+  font: inherit; color: var(--text); cursor: pointer; gap: 1px; min-width: 0;
+}
+.cal-cell.empty { background: none; cursor: default; }
+.cal-cell.lv1 { background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
+.cal-cell.lv2 { background: color-mix(in srgb, var(--accent) 24%, var(--card)); }
+.cal-cell.lv3 { background: color-mix(in srgb, var(--accent) 38%, var(--card)); }
+.cal-cell.lv4 { background: color-mix(in srgb, var(--accent) 54%, var(--card)); }
+.cal-cell.today { border-color: var(--accent); }
+.cal-cell.selected { border-color: var(--text); border-width: 2px; }
+.cal-d { font-size: 11px; color: var(--sub); }
+.cal-amt { font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cal-in { font-size: 9px; color: var(--income); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cal-hint { text-align: center; }
+
+/* --- 詳細シート --- */
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, .4);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.sheet-backdrop.hidden { display: none; }
+.sheet {
+  position: relative; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto;
+  background: var(--card); border-radius: 16px 16px 0 0;
+  padding: 20px 16px calc(20px + var(--safe-bottom));
+}
+.sheet-close { position: absolute; top: 12px; right: 12px; }
+.sheet-payee { font-size: 16px; font-weight: 700; padding-right: 44px; word-break: break-all; }
+.sheet-amount { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 4px 0 12px; }
+.sheet-amount.income { color: var(--income); }
+.sheet-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0 0 12px; font-size: 13px; }
+.sheet-dl dt { color: var(--sub); }
+.sheet-dl dd { margin: 0; word-break: break-all; }
+.sheet-stats { background: var(--bg); border-radius: 10px; padding: 10px 12px; font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
+.sheet-stats div { display: flex; justify-content: space-between; gap: 8px; }
+.sheet-stats .k { color: var(--sub); white-space: nowrap; }
+.sheet-stats .v { text-align: right; font-variant-numeric: tabular-nums; }
+.sheet-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.sheet-actions .secondary-btn { flex: 1 1 auto; }
+[data-seq] { cursor: pointer; }
+
+/* --- 分析: 収支・固定費・年間レポート --- */
+.chart .sbar.pos { fill: var(--income); }
+.chart .sbar.neg { fill: var(--danger); }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.tile { background: var(--bg); border-radius: 10px; padding: 10px 8px; text-align: center; min-width: 0; }
+.tile-k { font-size: 11px; color: var(--sub); }
+.tile-v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0; }
+.tile-s { font-size: 10px; color: var(--sub); }
+.sub-title { margin-top: 4px; }
+.inline-select {
+  padding: 4px 8px; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text);
+}
+.table-scroll { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+.year-table { border-collapse: separate; border-spacing: 2px; font-size: 11px; font-variant-numeric: tabular-nums; }
+.year-table th { font-weight: 600; color: var(--sub); padding: 4px; white-space: nowrap; text-align: right; }
+.year-table th.sticky { position: sticky; left: 0; background: var(--card); text-align: left; max-width: 6em; overflow: hidden; text-overflow: ellipsis; z-index: 1; }
+.year-table td { padding: 5px 4px; text-align: right; border-radius: 4px; min-width: 2.6em; cursor: pointer; white-space: nowrap; }
+.year-table td.lv1 { background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
+.year-table td.lv2 { background: color-mix(in srgb, var(--accent) 24%, var(--card)); }
+.year-table td.lv3 { background: color-mix(in srgb, var(--accent) 38%, var(--card)); }
+.year-table td.lv4 { background: color-mix(in srgb, var(--accent) 54%, var(--card)); }
+.year-table td.total { font-weight: 700; cursor: default; }
+.year-table tr.foot td { font-weight: 700; border-top: 1px solid var(--line); cursor: default; }
+#view-analysis select.inline-select { width: auto; flex: none; margin: 0; padding: 4px 8px; font-size: 13px; }
+.card-title-row .card-title { min-width: 0; }

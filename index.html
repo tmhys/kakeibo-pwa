@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -35,10 +35,24 @@
     <div id="sync-note" class="sync-note"></div>
   </section>
 
+  <section id="allowance" class="card allowance-card hidden"></section>
+
+  <section class="card">
+    <div class="card-title">今月のペース（累積）</div>
+    <div id="pace-legend" class="legend"></div>
+    <div id="pace-chart" class="chart"></div>
+    <div id="pace-note" class="chart-note"></div>
+  </section>
+
   <section id="budget-card" class="card hidden">
     <div class="card-title">今月の予算</div>
     <div class="budget-bar-track"><div id="budget-bar-fill" class="budget-bar-fill"></div></div>
     <div id="budget-text" class="budget-text"></div>
+  </section>
+
+  <section id="catbudget-card" class="card hidden">
+    <div class="card-title">カテゴリ別の予算<span class="title-note">（縦線は今日までの目安）</span></div>
+    <div id="catbudget-list" class="category-bars"></div>
   </section>
 
   <section id="income-card" class="card hidden">
@@ -63,6 +77,10 @@
 
 <main id="view-history" class="view hidden">
   <section class="card">
+    <div id="history-mode" class="type-toggle compact">
+      <button class="type-btn on" data-mode="list">リスト</button>
+      <button class="type-btn" data-mode="calendar">カレンダー</button>
+    </div>
     <input id="history-search" type="search" placeholder="利用先・カテゴリ・メモで検索" autocomplete="off">
     <div class="filter-row">
       <select id="history-month-filter" aria-label="月">
@@ -108,6 +126,17 @@
     <div id="history-trend" class="chart"></div>
     <div id="history-trend-note" class="chart-note"></div>
   </section>
+  <section id="history-calendar" class="hidden">
+    <section class="card">
+      <div class="month-nav cal-nav">
+        <button id="cal-prev" class="icon-btn" aria-label="前の月">←</button>
+        <div id="cal-label" class="month-label"></div>
+        <button id="cal-next" class="icon-btn" aria-label="次の月">→</button>
+      </div>
+      <div id="cal-grid" class="cal-grid"></div>
+    </section>
+    <div id="cal-day" class="history-list"></div>
+  </section>
   <section id="history-list" class="history-list"></section>
 </main>
 
@@ -147,6 +176,25 @@
     <section class="card">
       <div class="card-title">曜日別（1日あたり平均）</div>
       <div id="analysis-dow" class="category-bars"></div>
+    </section>
+    <section id="flow-card" class="card hidden">
+      <div class="card-title">収支の推移（収入 − 支出・今月を除く）</div>
+      <div id="flow-chart" class="chart"></div>
+      <div id="flow-note" class="chart-note"></div>
+    </section>
+    <section id="fixed-card" class="card hidden">
+      <div class="card-title">固定費と変動費（期間の月平均・今月を除く）</div>
+      <div id="fixed-tiles" class="tiles"></div>
+      <div class="card-title sub-title">主な固定費（定期払い＋通信・保険・サブスクなど）</div>
+      <div id="fixed-list" class="category-bars"></div>
+    </section>
+    <section class="card">
+      <div class="card-title-row">
+        <div class="card-title">年間レポート（カテゴリ × 月）</div>
+        <select id="report-year" class="inline-select" aria-label="年"></select>
+      </div>
+      <div id="report-note" class="chart-note top"></div>
+      <div id="report-table" class="table-scroll"></div>
     </section>
   </div>
 </main>
@@ -264,6 +312,14 @@
     <textarea id="set-income-categories" rows="2"></textarea>
   </section>
 
+  <section class="card">
+    <div class="card-title">予算（この端末に保存）</div>
+    <label class="field-label">月の予算（総額・空なら gas の MONTHLY_BUDGET）</label>
+    <input id="set-budget-total" type="number" inputmode="numeric" min="0">
+    <label class="field-label">カテゴリ別の予算（1行に「カテゴリ=金額」）</label>
+    <textarea id="set-cat-budgets" rows="4" placeholder="食費=50000&#10;外食=15000&#10;日用品=10000"></textarea>
+  </section>
+
   <button id="set-save" class="save-btn">設定を保存</button>
 </main>
 
@@ -275,10 +331,18 @@
   <button data-view="entry" class="nav-btn"><span class="nav-icon">➕</span><span>入力</span></button>
 </nav>
 
+<div id="sheet" class="sheet-backdrop hidden" role="dialog" aria-modal="true" aria-label="取引の詳細">
+  <div class="sheet">
+    <button id="sheet-close" class="icon-btn sheet-close" aria-label="閉じる">✕</button>
+    <div id="sheet-body"></div>
+  </div>
+</div>
+
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js?v=4"></script>
-<script src="analysis.js?v=4"></script>
-<script src="import.js?v=4"></script>
+<script src="app.js?v=5"></script>
+<script src="analysis.js?v=5"></script>
+<script src="import.js?v=5"></script>
+<script src="features.js?v=5"></script>
 </body>
 </html>

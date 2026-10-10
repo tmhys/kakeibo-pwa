@@ -249,6 +249,7 @@ function ingest(data) {
 
   store.txs = txs;
   store.byMonth = byMonth;
+  store.bySeq = new Map(txs.map((t) => [t.seq, t]));
   store.budget = Number(data.budget) || 0;
   store.updatedAt = data.updatedAt || '';
   historyOptionsDirty = true;
@@ -399,8 +400,8 @@ function renderHome() {
   diffEl.className = 'total-diff' + (s.diffToDate > 0 ? ' over' : ' under');
 
   const budgetCard = document.getElementById('budget-card');
-  if (store.budget > 0) {
-    const limit = store.budget;
+  const limit = totalBudget();
+  if (limit > 0) {
     const remain = limit - s.total;
     budgetCard.classList.remove('hidden');
     const pct = Math.min(100, Math.max(0, (s.total / limit) * 100));
@@ -449,10 +450,12 @@ function renderHome() {
 
   const recentEl = document.getElementById('recent-list');
   recentEl.innerHTML = s.recent.length ? s.recent.map((t) =>
-    '<div class="recent-row"><div class="row-main"><div class="row-payee">' + escapeHtml(t.payee) + '</div>' +
+    '<div class="recent-row" data-seq="' + t.seq + '"><div class="row-main"><div class="row-payee">' + escapeHtml(t.payee) + '</div>' +
     '<div class="row-sub">' + escapeHtml(ymdLabel(t.date)) + ' · ' + escapeHtml(t.category) + '</div></div>' +
     '<div class="row-amt">' + yen(t.amount) + '</div></div>'
   ).join('') : '<div class="empty-note">まだありません</div>';
+
+  renderHomeExtras(s);
 }
 
 document.getElementById('month-prev').addEventListener('click', () => { homeYm = ymAdd(homeYm, -1); renderHome(); });
@@ -472,6 +475,7 @@ let historyRendered = 0;
 let historyTotals = null; // {day: Map, mon: Map}
 let historyObserver = null;
 let historyChartYm = ''; // 推移グラフで選んだ月（一覧の該当月へ飛ぶ用）
+let historyMode = 'list'; // 'list' | 'calendar'
 
 const TYPE_FILTERS = {
   io: (t) => t.type !== '振替' && t.type !== '集計',
@@ -504,6 +508,8 @@ function populateHistoryOptions() {
 
 /** 他の画面から条件つきで履歴を開く。指定しなかった条件はリセットする。 */
 function openHistoryWith(f) {
+  // 条件つきで開くときは一覧で見せる（カレンダーは月単位なので）
+  if (historyMode !== 'list') applyHistoryMode('list');
   showView('history');
   populateHistoryOptions();
   const defaults = { 'history-type-filter': 'io', 'history-sort': 'date' };
@@ -534,6 +540,21 @@ function readHistoryFilters() {
   };
 }
 
+/**
+ * 履歴の絞り込み条件に合うか。withPeriod=false なら日付の範囲は見ない
+ * （カレンダーは表示中の月で区切るため）。
+ */
+function historyMatch(t, f, withPeriod) {
+  return f.typeOk(t) &&
+    (!f.cat || t.category === f.cat) &&
+    (!f.method || t.method === f.method) &&
+    (!withPeriod || !f.from || t.date >= f.from) &&
+    (!withPeriod || !f.to || t.date <= f.to) &&
+    (f.min == null || t.amount >= f.min) &&
+    (f.max == null || t.amount <= f.max) &&
+    (!f.q || t.search.includes(f.q));
+}
+
 /** 詳細フィルタ（期間・金額・決済手段・並び順）が使われているか */
 function advancedActive() {
   const f = readHistoryFilters();
@@ -559,16 +580,12 @@ function renderHistory() {
   populateHistoryOptions();
 
   const f = readHistoryFilters();
+  if (historyMode === 'calendar') {
+    renderCalendar(f);
+    return;
+  }
   const source = f.month ? (store.byMonth.get(f.month) || []) : store.txs;
-  historyFiltered = source.filter((t) =>
-    f.typeOk(t) &&
-    (!f.cat || t.category === f.cat) &&
-    (!f.method || t.method === f.method) &&
-    (!f.from || t.date >= f.from) &&
-    (!f.to || t.date <= f.to) &&
-    (f.min == null || t.amount >= f.min) &&
-    (f.max == null || t.amount <= f.max) &&
-    (!f.q || t.search.includes(f.q)));
+  historyFiltered = source.filter((t) => historyMatch(t, f, true));
   if (f.sort === 'amount') {
     historyFiltered = historyFiltered.slice().sort((a, b) => b.amount - a.amount);
   }
@@ -654,7 +671,7 @@ function historyRowHtml(t, withDate) {
     (isOther ? '<span class="chip other">' + escapeHtml(t.type) + '</span>' : '') +
     '<span class="chip' + (t.category === '未分類' ? ' uncat' : '') + '">' + escapeHtml(t.category) + '</span>' +
     escapeHtml(t.method) + (t.memo ? ' · ' + escapeHtml(t.memo) : '');
-  return '<div class="history-row"><div class="row-main"><div class="row-payee">' + escapeHtml(t.payee) + '</div>' +
+  return '<div class="history-row" data-seq="' + t.seq + '"><div class="row-main"><div class="row-payee">' + escapeHtml(t.payee) + '</div>' +
     '<div class="row-sub">' + sub + '</div></div>' +
     '<div class="row-amt' + (isIncome ? ' income' : isOther ? ' other' : '') + '">' +
     (isIncome ? '+' : '') + yen(t.amount) + '</div></div>';
@@ -876,6 +893,7 @@ function initSettingsView() {
   document.getElementById('set-method').value = s.method;
   document.getElementById('set-categories').value = s.categories.join(', ');
   document.getElementById('set-income-categories').value = s.incomeCategories.join(', ');
+  initBudgetSettings();
   document.getElementById('set-test-result').textContent = '';
   document.getElementById('set-test-result').className = 'test-result';
 }
@@ -916,6 +934,7 @@ document.getElementById('set-save').addEventListener('click', () => {
     categories: categories.length ? categories : DEFAULT_CATEGORIES,
     incomeCategories: incomeCategories.length ? incomeCategories : DEFAULT_INCOME_CATEGORIES,
   });
+  saveBudgetSettings();
   const after = getSettings();
   showToast('設定を保存しました');
   if (before.baseUrl !== after.baseUrl || before.token !== after.token || !store.txs) {
@@ -950,10 +969,13 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-if (!isConfigured()) {
-  showView('settings');
-} else {
-  loadCache();          // 前回のデータで即描画
-  showView('home');
-  refreshData();        // 裏で最新を取得して描き直す
-}
+// 起動は全スクリプト（analysis.js・features.js など）を読み終えてから
+document.addEventListener('DOMContentLoaded', () => {
+  if (!isConfigured()) {
+    showView('settings');
+  } else {
+    loadCache();          // 前回のデータで即描画
+    showView('home');
+    refreshData();        // 裏で最新を取得して描き直す
+  }
+});
