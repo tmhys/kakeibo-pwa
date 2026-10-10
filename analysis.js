@@ -216,6 +216,7 @@ function renderAnalysis() {
     onSelect: (s) => { analysisYm = s.key; renderAnalysisDetail(match, avg, yms); },
   });
   renderAnalysisDetail(match, avg, yms);
+  renderAnalysisExtras(yms); // features.js（収支・固定費・年間レポート）
 }
 
 /** 選んだ月のカテゴリ別・店別 */
