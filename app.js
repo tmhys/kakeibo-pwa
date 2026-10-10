@@ -192,7 +192,9 @@ function norm(s) {
 }
 
 function isExpense(t) {
-  return NON_EXPENSE_TYPES.indexOf(t.type) === -1;
+  // カテゴリが「振替」なのに種別が支出のままの行（古い取り込み）も支出に数えない。
+  // gas のメニュー「支出を振替に直す」でシート側も直せる
+  return NON_EXPENSE_TYPES.indexOf(t.type) === -1 && t.category !== '振替';
 }
 
 function sumAmount(list) {

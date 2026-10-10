@@ -282,7 +282,8 @@ document.getElementById('analysis-search').addEventListener('input', () => {
 
 // コンビニ・手数料など、置き換えや見直しの余地が出やすい支払いの目印
 const CONVENIENCE_RE = /セブン|ｾﾌﾞﾝ|ローソン|ﾛ-ｿﾝ|ﾛｰｿﾝ|ファミリーマート|ﾌｱﾐﾘ-ﾏ-ﾄ|ﾌｧﾐﾘｰﾏｰﾄ|ファミマ|ミニストップ|ﾐﾆｽﾄｯﾌﾟ|デイリーヤマザキ|ニューデイズ|NEWDAYS/i;
-const FEE_RE = /手数料|ATM|ＡＴＭ|延滞|利息/;
+// 「ATM」だけでは手数料ではない（現金の引き出しそのものに当たってしまう）
+const FEE_RE = /手数料|延滞|利息/;
 
 const review = { mode: 'month', key: '' };
 
