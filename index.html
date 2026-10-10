@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -98,7 +98,10 @@
     </select>
     <div class="filter-actions">
       <button id="history-adv-toggle" class="link-btn plain">▸ 詳細な条件</button>
-      <button id="history-reset" class="link-btn plain">条件をクリア</button>
+      <span>
+        <button id="history-export" class="link-btn plain">CSVで書き出す</button>
+        <button id="history-reset" class="link-btn plain">条件をクリア</button>
+      </span>
     </div>
     <div id="history-adv" class="hidden">
       <div class="filter-row">
@@ -196,6 +199,14 @@
       <div id="report-note" class="chart-note top"></div>
       <div id="report-table" class="table-scroll"></div>
     </section>
+    <section class="card">
+      <div class="card-title" id="medical-title">医療費控除の目安</div>
+      <div id="medical-body"></div>
+    </section>
+    <section class="card">
+      <div class="card-title">データの点検</div>
+      <div id="datacheck-body"></div>
+    </section>
   </div>
 </main>
 
@@ -225,6 +236,8 @@
     </div>
   </section>
 
+  <section id="quick-picks" class="card quick-picks"></section>
+
   <section class="card">
     <div id="amount-display" class="amount-display">¥0</div>
     <div class="keypad">
@@ -242,7 +255,8 @@
 
   <section class="card">
     <label class="field-label" id="payee-label">利用先（未入力ならカテゴリ名を使います）</label>
-    <input id="entry-payee" type="text" autocomplete="off" placeholder="例: セブンイレブン">
+    <input id="entry-payee" type="text" autocomplete="off" list="payee-list" placeholder="例: セブンイレブン">
+    <datalist id="payee-list"></datalist>
 
     <label class="field-label">日付</label>
     <input id="entry-date" type="date">
@@ -340,9 +354,10 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js?v=5"></script>
-<script src="analysis.js?v=5"></script>
-<script src="import.js?v=5"></script>
-<script src="features.js?v=5"></script>
+<script src="app.js?v=6"></script>
+<script src="analysis.js?v=6"></script>
+<script src="import.js?v=6"></script>
+<script src="features.js?v=6"></script>
+<script src="features2.js?v=6"></script>
 </body>
 </html>

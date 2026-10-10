@@ -326,6 +326,7 @@ function openDetail(t) {
     renderAnalysis();
   };
   document.getElementById('sheet-cat').onclick = () => { closeDetail(); openHistoryWith({ month: todayYm(), category: t.category, type: 'expense' }); };
+  renderCategoryEditor(t); // features2.js
 }
 
 function closeDetail() {
@@ -451,6 +452,7 @@ function renderAnalysisExtras(yms) {
   }
 
   renderYearReport();
+  renderDataCheck(); // features2.js
 }
 
 let reportYear = '';
@@ -494,6 +496,7 @@ function renderYearReport() {
   wrap.querySelectorAll('td[data-cat]').forEach((td) => {
     td.onclick = () => openHistoryWith({ month: td.dataset.ym, category: td.dataset.cat, type: 'expense' });
   });
+  renderMedical(reportYear); // features2.js
 }
 
 document.getElementById('report-year').addEventListener('change', (e) => { reportYear = e.target.value; renderYearReport(); });

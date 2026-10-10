@@ -183,6 +183,14 @@ function ymdLabel(ymd) {
   return m + '/' + d + '（' + WEEKDAYS[new Date(y, m - 1, d).getDay()] + '）';
 }
 
+/**
+ * 検索用の正規化。カード明細は半角カナ（ﾄﾞﾄｰﾙ）、通知は全角（ドトール）で来るので、
+ * NFKC で揃えて大文字小文字と空白を無視する。
+ */
+function norm(s) {
+  return String(s == null ? '' : s).normalize('NFKC').toLowerCase().replace(/[\s　]+/g, '');
+}
+
 function isExpense(t) {
   return NON_EXPENSE_TYPES.indexOf(t.type) === -1;
 }
@@ -232,10 +240,11 @@ function ingest(data) {
       amount: Number(r[idx.amount]) || 0,
       category: String(r[idx.category] || '未分類'),
       memo: idx.memo == null ? '' : String(r[idx.memo] || ''),
+      id: idx.id == null ? '' : String(r[idx.id] || ''), // 古い gas には無い（カテゴリ修正に使う）
       seq: i,
     };
     t.ym = t.date.slice(0, 7);
-    t.search = (t.payee + '\n' + t.category + '\n' + t.method + '\n' + t.memo).toLowerCase();
+    t.search = norm(t.payee) + '\n' + norm(t.category) + '\n' + norm(t.method) + '\n' + norm(t.memo);
     return t;
   });
   // 日付の新しい順。同じ日の中はシートの後ろ（＝後から入った）ほど上。
@@ -527,7 +536,7 @@ function openHistoryWith(f) {
 function readHistoryFilters() {
   const v = (id) => document.getElementById(id).value;
   return {
-    q: v('history-search').trim().toLowerCase(),
+    q: norm(v('history-search')),
     month: v('history-month-filter'),
     cat: v('history-category-filter'),
     method: v('history-method-filter'),
@@ -767,6 +776,7 @@ function initEntryView() {
   renderEntryType();
   renderCategoryGrid();
   renderAmount();
+  renderQuickPicks(); // features2.js
 }
 
 function renderEntryType() {
