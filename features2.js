@@ -245,6 +245,13 @@ function renderDataCheck() {
     (uncat.length ? uncat.length + '件・' + yen(uncatAmt) + ' <button class="link-btn plain" id="check-uncat">確認する</button>' : 'なし') + '</span></div>');
   parts.push('<div class="check-row"><span>' + (dups.length ? '⚠' : '✓') + ' 重複の疑い（直近12か月）</span><span>' +
     (dups.length ? dups.length + '組' : 'なし') + '</span></div>');
+  const edy = edyMissingMonths(monthRange(ymAdd(todayYm(), -12), todayYm()));
+  parts.push('<div class="check-row"><span>' + (edy.length ? '⚠' : '✓') + ' 楽天Edyの月次合計（直近12か月）</span><span>' +
+    (edy.length ? edy.map((m) => Number(m.ym.slice(5)) + '月').join('・') + 'が未着' : '毎月届いています') + '</span></div>');
+  if (edy.length) {
+    parts.push('<div class="help-text">Edy で払った分は、楽天Edyから毎月届く「ご利用金額」のメールで支出に入ります。届いていない月は、' +
+      'Edy で使った分が支出から抜けています（チャージは振替なので数えていません）。楽天Edyのメール配信設定を確認してください。</div>');
+  }
   if (dups.length) {
     parts.push('<div class="help-text">同じ日・同じ金額の支出です。別の経路（支払い通知とカード明細など）から同じ支払いが二重に入っていないか確認してください。タップで詳細。</div>');
     parts.push('<div class="dup-list">' + dups.slice(0, 10).map((g) =>

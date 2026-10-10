@@ -285,6 +285,35 @@ const CONVENIENCE_RE = /セブン|ｾﾌﾞﾝ|ローソン|ﾛ-ｿﾝ|ﾛｰｿ
 // 「ATM」だけでは手数料ではない（現金の引き出しそのものに当たってしまう）
 const FEE_RE = /手数料|延滞|利息/;
 
+// ---------------------------------------------------------------------------
+// 楽天Edy の月次合計の見張り
+//
+// Edy で払った分は明細が来ないので、楽天Edyの「○月のご利用金額」メールの合計を
+// 月末日付で1行の支出として入れている（gas の parseRakutenEdyMonthly_）。チャージは
+// 振替なので、このメールが届かない月は Edy で使った分が丸ごと支出から抜ける。
+// ---------------------------------------------------------------------------
+
+const EDY_TOTAL_PAYEE = '楽天Edy 月次合計';
+
+function isEdyCharge(t) {
+  return t.type === '振替' && t.payee !== EDY_TOTAL_PAYEE && /フェリカポケット|edy/.test(norm(t.payee));
+}
+
+/**
+ * 月次合計が届いていない月を返す（古い順）。
+ * 「その月に Edy へのチャージがある」か「前の月には月次合計がある」のに、その月の
+ * 月次合計が無い月が対象。メールは翌月の頭に届くので、翌月10日を過ぎた月だけ見る。
+ * @return [{ym, charged}]
+ */
+function edyMissingMonths(yms) {
+  const now = todayYmd();
+  const hasTotal = (ym) => (store.byMonth.get(ym) || []).some((t) => t.payee === EDY_TOTAL_PAYEE);
+  const charged = (ym) => (store.byMonth.get(ym) || []).filter(isEdyCharge).reduce((a, t) => a + t.amount, 0);
+  return yms.filter((ym) => now >= ymAdd(ym, 1) + '-10')
+    .filter((ym) => !hasTotal(ym) && (charged(ym) > 0 || hasTotal(ymAdd(ym, -1))))
+    .map((ym) => ({ ym, charged: charged(ym) }));
+}
+
 const review = { mode: 'month', key: '' };
 
 function quarterOf(ym) {
@@ -341,6 +370,7 @@ function findRecurring(endYm) {
   const per = new Map(); // payee -> Map(ym -> amount)
   const count = new Map();
   expensesIn(yms).forEach((t) => {
+    if (t.payee === EDY_TOTAL_PAYEE) return; // Edy の月次合計は毎月あるがサブスクではない
     if (!per.has(t.payee)) per.set(t.payee, new Map());
     const m = per.get(t.payee);
     m.set(t.ym, (m.get(t.ym) || 0) + t.amount);
@@ -462,7 +492,14 @@ function computeReview(key, mode) {
       '。避けられるものがないか確認を。', { search: '手数料' });
   }
 
-  // 8. 未分類
+  // 8. 楽天Edy の月次合計が届いていない
+  edyMissingMonths(yms).forEach((m) => {
+    add('warn', ymLabel(m.ym) + 'の楽天Edyの月次合計が届いていません' +
+      (m.charged ? '（この月のチャージ ' + yen(m.charged) + '）' : '') +
+      '。Edy で使った分が支出に入っていない可能性があります。楽天Edyのメール配信設定を確認してください。');
+  });
+
+  // 9. 未分類
   const uncat = cur.filter((t) => t.category === '未分類');
   if (uncat.length) {
     add('info', '未分類が ' + uncat.length + '件・' + yen(uncat.reduce((a, t) => a + t.amount, 0)) +
