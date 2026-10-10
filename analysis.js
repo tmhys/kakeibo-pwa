@@ -188,7 +188,7 @@ function renderAnalysis() {
 
   const range = document.getElementById('analysis-range').value;
   const cat = document.getElementById('analysis-category').value;
-  const q = document.getElementById('analysis-search').value.trim().toLowerCase();
+  const q = norm(document.getElementById('analysis-search').value);
   const to = todayYm();
   const first = firstDataYm();
   let from = range === 'all' ? first : ymAdd(to, -(Number(range) - 1));
