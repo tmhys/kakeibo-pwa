@@ -316,21 +316,53 @@ function openDetail(t) {
     '<button class="secondary-btn" id="sheet-history">このお店の履歴</button>' +
     '<button class="secondary-btn" id="sheet-trend">月別の推移</button>' +
     '<button class="secondary-btn" id="sheet-cat">' + escapeHtml(t.category) + 'の今月</button></div>';
-  document.getElementById('sheet').classList.remove('hidden');
-  document.getElementById('sheet-history').onclick = () => { closeDetail(); openHistoryWith({ search: t.payee }); };
-  document.getElementById('sheet-trend').onclick = () => {
-    closeDetail();
+  openSheet();
+  document.getElementById('sheet-history').onclick = () => closeDetail(() => openHistoryWith({ search: t.payee }));
+  document.getElementById('sheet-trend').onclick = () => closeDetail(() => {
     showView('analysis');
     document.getElementById('analysis-search').value = t.payee;
     document.getElementById('analysis-category').value = '';
     renderAnalysis();
-  };
-  document.getElementById('sheet-cat').onclick = () => { closeDetail(); openHistoryWith({ month: todayYm(), category: t.category, type: 'expense' }); };
+  });
+  document.getElementById('sheet-cat').onclick = () => closeDetail(() => openHistoryWith({ month: todayYm(), category: t.category, type: 'expense' }));
   renderCategoryEditor(t); // features2.js
 }
 
-function closeDetail() {
+// 詳細シートも履歴に積む（戻るボタンでシートだけ閉じる）。
+let afterSheetClose = null;
+
+function sheetIsOpen() {
+  return !document.getElementById('sheet').classList.contains('hidden');
+}
+
+function openSheet() {
+  if (!sheetIsOpen()) history.pushState({ view: currentView, depth: historyDepth() + 1, sheet: true }, '');
+  document.getElementById('sheet').classList.remove('hidden');
+}
+
+/**
+ * シートを閉じる。then があれば、閉じ終わってから実行する（別の画面へ移るとき）。
+ * シートの履歴を戻す操作は非同期なので、戻り終わる前に次の画面を積むと順番が崩れる。
+ */
+function closeDetail(then) {
+  if (!sheetIsOpen()) { if (then) then(); return; }
+  if (history.state && history.state.sheet) {
+    afterSheetClose = then || null;
+    history.back(); // popstate → onSheetPopState で閉じる
+    return;
+  }
   document.getElementById('sheet').classList.add('hidden');
+  if (then) then();
+}
+
+/** app.js の popstate から呼ばれる。シートを閉じたら true（画面は切り替えない） */
+function onSheetPopState() {
+  if (!sheetIsOpen()) return false;
+  document.getElementById('sheet').classList.add('hidden');
+  const fn = afterSheetClose;
+  afterSheetClose = null;
+  if (fn) fn();
+  return true;
 }
 
 document.addEventListener('click', (e) => {

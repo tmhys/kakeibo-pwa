@@ -89,9 +89,10 @@ function renderCategoryEditor(t) {
       [t].concat(local).forEach((x) => { x.search = norm(x.payee) + '\n' + norm(x.category) + '\n' + norm(x.method) + '\n' + norm(x.memo); });
       historyOptionsDirty = true;
       showToast('✅ ' + res.updated + '件を「' + category + '」に変更' + (res.ruleAdded ? '・ルールに追加' : ''));
-      closeDetail();
-      renderCurrentView();
-      refreshData();
+      closeDetail(() => {
+        renderCurrentView();
+        refreshData();
+      });
     } catch (e) {
       showToast(String(e.message || e), 'ng');
       btn.disabled = false;

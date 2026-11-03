@@ -332,7 +332,40 @@ function refreshData() {
 const VIEW_TITLES = { home: 'ホーム', history: '履歴', analysis: '分析', review: 'レビュー', fixed: '定期支払い', entry: '入力', import: '銀行明細の取り込み', settings: '設定' };
 let currentView = 'home';
 
+// ---------------------------------------------------------------------------
+// 戻るボタン
+//
+// 画面の切り替えと詳細シートを履歴（history.pushState）に積む。積まないと、Android の
+// 戻るボタン（PWA でも家計簿アプリの WebView でも）がどの画面からでもアプリを閉じてしまう。
+//   - 下のタブどうしの移動は積み増さない（置き換える）。戻るとホーム、もう一度でアプリを閉じる
+//   - それ以外（設定・定期支払い・条件つきの履歴・詳細シート）は積む。戻ると前の画面
+//   - タブの「ホーム」は、積んだ分を一気に戻る
+// ---------------------------------------------------------------------------
+
+const NAV_VIEWS = ['home', 'history', 'analysis', 'review', 'entry'];
+let restoringFromHistory = false; // 戻る操作で画面を描き直している最中（ここで積み直さない）
+
+function historyDepth() {
+  return (history.state && history.state.depth) || 0;
+}
+
 function showView(name) {
+  if (!restoringFromHistory && name !== currentView) {
+    const depth = historyDepth();
+    if (name === 'home' && depth > 0) {
+      history.go(-depth); // popstate でホームを描く
+      return;
+    }
+    if (NAV_VIEWS.includes(name) && NAV_VIEWS.includes(currentView) && currentView !== 'home' && depth > 0) {
+      history.replaceState({ view: name, depth }, '');
+    } else {
+      history.pushState({ view: name, depth: depth + 1 }, '');
+    }
+  }
+  renderView(name);
+}
+
+function renderView(name) {
   currentView = name;
   document.querySelectorAll('.view').forEach((el) => {
     el.classList.toggle('hidden', el.id !== 'view-' + name);
@@ -985,13 +1018,28 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+window.addEventListener('popstate', (e) => {
+  // 詳細シートが開いていれば、閉じるだけ（features.js）
+  if (onSheetPopState()) return;
+  const st = e.state || { view: 'home', depth: 0 };
+  restoringFromHistory = true;
+  try {
+    renderView(st.view || 'home');
+  } finally {
+    restoringFromHistory = false;
+  }
+});
+
 // 起動は全スクリプト（analysis.js・features.js など）を読み終えてから
 document.addEventListener('DOMContentLoaded', () => {
+  restoringFromHistory = true; // 最初の画面は履歴に積まない（戻るでアプリを閉じられるように）
   if (!isConfigured()) {
-    showView('settings');
+    renderView('settings');
   } else {
     loadCache();          // 前回のデータで即描画
-    showView('home');
+    renderView('home');
     refreshData();        // 裏で最新を取得して描き直す
   }
+  restoringFromHistory = false;
+  history.replaceState({ view: currentView, depth: 0 }, '');
 });

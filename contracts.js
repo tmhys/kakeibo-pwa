@@ -369,10 +369,10 @@ function openContract(c) {
   if (!isNew && v.key) parts.push('<div class="sheet-actions"><button class="secondary-btn" id="ct-history">この支払いの履歴</button></div>');
 
   document.getElementById('sheet-body').innerHTML = parts.join('');
-  document.getElementById('sheet').classList.remove('hidden');
+  openSheet();
 
   const $ = (id) => document.getElementById(id);
-  if ($('ct-history')) $('ct-history').onclick = () => { closeDetail(); openHistoryWith({ search: v.key, type: 'expense' }); };
+  if ($('ct-history')) $('ct-history').onclick = () => closeDetail(() => openHistoryWith({ search: v.key, type: 'expense' }));
   if ($('ct-save')) {
     $('ct-save').onclick = () => saveContract({
       key: $('ct-key').value.trim() || $('ct-name').value.trim(),
@@ -397,9 +397,10 @@ async function saveContract(c, remove, oldKey) {
     }
     const res = await apiPost('save-contract', { contract: c, remove });
     store.contracts = res.contracts;
-    closeDetail();
-    showToast(remove ? '自動の判定に戻しました' : '保存しました');
-    renderCurrentView();
+    closeDetail(() => {
+      showToast(remove ? '自動の判定に戻しました' : '保存しました');
+      renderCurrentView();
+    });
   } catch (e) {
     showToast(String(e.message || e), 'ng');
   }
