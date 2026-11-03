@@ -157,6 +157,11 @@ function csvCell(v) {
 /** Excel で文字化けしないよう BOM つき UTF-8 で保存させる */
 function downloadCsv(filename, rows) {
   const text = '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
+  // 家計簿アプリ（Android）の中では、WebView が blob を保存できないので保存先を選ぶ画面に渡す
+  if (window.KakeiboApp && window.KakeiboApp.saveFile) {
+    window.KakeiboApp.saveFile(filename, text);
+    return;
+  }
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
   a.href = url;

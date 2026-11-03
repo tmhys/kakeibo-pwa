@@ -1,0 +1,10 @@
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+# 署名鍵とパスワードは置かない（公開リポジトリのため。Actions の Secrets で渡す）
+*.keystore
+*.jks
+signing.properties
