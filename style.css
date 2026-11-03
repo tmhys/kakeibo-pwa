@@ -445,3 +445,26 @@ textarea { resize: vertical; }
 .check-row:last-of-type { border-bottom: none; }
 .check-row .link-btn.plain { padding: 0; font-size: 12px; }
 .dup-list .card { padding: 4px 16px; }
+
+/* --- 定期支払い --- */
+.clickable { cursor: pointer; }
+.contracts-home-total { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 2px 0 4px; }
+.per { font-size: 12px; font-weight: 400; color: var(--sub); margin-left: 2px; }
+.warn-text { color: var(--danger); }
+.kind-sum { font-size: 13px; color: var(--sub); font-variant-numeric: tabular-nums; }
+.contract-row .row-sub .chip, .row-flags .chip { margin-right: 4px; }
+.row-flags { margin-top: 3px; display: flex; flex-wrap: wrap; gap: 2px; }
+.soon-row.annual .row-payee { font-weight: 700; }
+.util-item { padding: 6px 0 14px; border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+.util-item:last-child { border-bottom: none; margin-bottom: 0; }
+.util-name { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.util-item .tiles { margin-bottom: 4px; }
+.secondary-btn.wide { width: 100%; margin: 4px 0 8px; }
+.help-text.center { text-align: center; }
+.sheet-pays { display: flex; flex-direction: column; gap: 2px; font-size: 12px; font-variant-numeric: tabular-nums; margin-bottom: 12px; }
+.sheet-pays div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 3px 0; }
+.cat-editor .mini-field select {
+  width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--text); margin-bottom: 8px;
+}
+.cat-editor .mini-field input { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); }
