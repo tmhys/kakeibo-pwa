@@ -262,6 +262,8 @@ function ingest(data) {
   store.byMonth = byMonth;
   store.bySeq = new Map(txs.map((t) => [t.seq, t]));
   store.budget = Number(data.budget) || 0;
+  // 定期支払いの手直し（gas の Contracts.gs）。古い gas には無いので null（手直しは保存できない）
+  store.contracts = Array.isArray(data.contracts) ? data.contracts : null;
   store.updatedAt = data.updatedAt || '';
   historyOptionsDirty = true;
 }
@@ -327,7 +329,7 @@ function refreshData() {
 // 画面切り替え
 // ---------------------------------------------------------------------------
 
-const VIEW_TITLES = { home: 'ホーム', history: '履歴', analysis: '分析', review: 'レビュー', entry: '入力', import: '銀行明細の取り込み', settings: '設定' };
+const VIEW_TITLES = { home: 'ホーム', history: '履歴', analysis: '分析', review: 'レビュー', fixed: '定期支払い', entry: '入力', import: '銀行明細の取り込み', settings: '設定' };
 let currentView = 'home';
 
 function showView(name) {
@@ -340,7 +342,7 @@ function showView(name) {
   });
   document.getElementById('page-title').textContent = VIEW_TITLES[name] || '';
 
-  if (['home', 'history', 'analysis', 'review', 'import'].includes(name) && !isConfigured()) {
+  if (['home', 'history', 'analysis', 'review', 'import', 'fixed'].includes(name) && !isConfigured()) {
     showToast('設定画面でWebApp URLとトークンを入力してください', 'ng');
     showView('settings');
     return;
@@ -357,6 +359,7 @@ function renderCurrentView() {
   if (currentView === 'history') renderHistory();
   if (currentView === 'analysis') renderAnalysis();
   if (currentView === 'review') renderReview();
+  if (currentView === 'fixed') renderFixed();
 }
 
 // ---------------------------------------------------------------------------
@@ -467,6 +470,7 @@ function renderHome() {
   ).join('') : '<div class="empty-note">まだありません</div>';
 
   renderHomeExtras(s);
+  renderContractsHome(); // contracts.js
 }
 
 document.getElementById('month-prev').addEventListener('click', () => { homeYm = ymAdd(homeYm, -1); renderHome(); });
