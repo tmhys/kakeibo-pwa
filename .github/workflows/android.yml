@@ -1,0 +1,81 @@
+name: android apk
+
+# 家計簿アプリ（Android）の APK を作る。android/ を変えたときだけ動く。
+# 画面（index.html・*.js）を変えただけなら APK は作り直さない（アプリは GitHub Pages を表示するので）。
+#
+# main ではリリースに載せる（Obtainium が追う番号付きの v1.<番号> と、1タップで落とす android-latest）。
+# 作業ブランチでは artifact に残すだけ（2日で消える）。
+#
+# 署名: 鍵ファイル（base64）を Secrets の KAKEIBO_KEYSTORE_B64、パスワードを KAKEIBO_KEYSTORE_PASSWORD に置く。
+# 鍵はリポジトリに置かない（公開リポジトリのため）。無いと debug 鍵でビルドされ、更新のたびにアンインストールが要る。
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths:
+      - "android/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write # リリースに APK を置くため
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: android/**/*.gradle*
+
+      - name: ビルド
+        env:
+          KAKEIBO_KEYSTORE_B64: ${{ secrets.KAKEIBO_KEYSTORE_B64 }}
+          KAKEIBO_KEYSTORE_PASSWORD: ${{ secrets.KAKEIBO_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KAKEIBO_KEYSTORE_B64" ] && [ -n "$KAKEIBO_KEYSTORE_PASSWORD" ]; then
+            echo "$KAKEIBO_KEYSTORE_B64" | base64 -d > app/kakeibo.keystore
+          else
+            echo "::warning::Secrets に KAKEIBO_KEYSTORE_B64 / KAKEIBO_KEYSTORE_PASSWORD が無いので debug 鍵でビルドする（上書き更新できない）"
+          fi
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: APKを artifact に残す
+        if: github.ref != 'refs/heads/main'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: kakeibo-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 2
+
+      - name: リリースを差し替える
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cp app/build/outputs/apk/release/app-release.apk kakeibo.apk
+          version="1.${GITHUB_RUN_NUMBER}"   # app/build.gradle.kts の versionName と同じ
+          gh release create "v${version}" kakeibo.apk \
+            --target "$GITHUB_SHA" --latest \
+            --title "家計簿 ${version}" \
+            --notes "コミット ${GITHUB_SHA:0:7} のビルド。"
+          gh release delete android-latest --yes --cleanup-tag || true
+          gh release create android-latest kakeibo.apk \
+            --prerelease \
+            --title "家計簿（最新ビルド）" \
+            --notes "コミット ${GITHUB_SHA:0:7} のビルド（v${version} と同じ APK）。"
+          # 番号付きのリリースは新しい5つだけ残す
+          gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | grep -E '^v1\.[0-9]+$' | sort -t. -k2 -n -r | tail -n +6 \
+            | while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done || true

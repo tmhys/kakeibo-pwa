@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      DayNight にしておくと、WebView の prefers-color-scheme が端末のダークモードに従う
+      （Web 側の style.css がライト／ダークを切り替える）。
+    -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="colorAccent">@color/app_accent</item>
+        <item name="colorPrimary">@color/app_accent</item>
+    </style>
+</resources>

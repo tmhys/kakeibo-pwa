@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Web 側（style.css の背景色・アクセント色）と同じ色。読み込み中やステータスバーの裏に出る -->
+    <color name="app_background">#F6F7F9</color>
+    <color name="app_accent">#0F765C</color>
+</resources>

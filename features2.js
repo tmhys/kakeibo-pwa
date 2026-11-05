@@ -89,9 +89,10 @@ function renderCategoryEditor(t) {
       [t].concat(local).forEach((x) => { x.search = norm(x.payee) + '\n' + norm(x.category) + '\n' + norm(x.method) + '\n' + norm(x.memo); });
       historyOptionsDirty = true;
       showToast('✅ ' + res.updated + '件を「' + category + '」に変更' + (res.ruleAdded ? '・ルールに追加' : ''));
-      closeDetail();
-      renderCurrentView();
-      refreshData();
+      closeDetail(() => {
+        renderCurrentView();
+        refreshData();
+      });
     } catch (e) {
       showToast(String(e.message || e), 'ng');
       btn.disabled = false;
@@ -156,6 +157,11 @@ function csvCell(v) {
 /** Excel で文字化けしないよう BOM つき UTF-8 で保存させる */
 function downloadCsv(filename, rows) {
   const text = '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
+  // 家計簿アプリ（Android）の中では、WebView が blob を保存できないので保存先を選ぶ画面に渡す
+  if (window.KakeiboApp && window.KakeiboApp.saveFile) {
+    window.KakeiboApp.saveFile(filename, text);
+    return;
+  }
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
   a.href = url;
