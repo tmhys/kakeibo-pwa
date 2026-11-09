@@ -20,6 +20,27 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!--
+                ブラウザのリンクからこのアプリを開くための口。
+                マイツール（tmhys/my-apps）のポータルが kakeibo://open を叩く。
+
+                BROWSABLE が要るのは、Chrome が intent:// を発射するときに
+                BROWSABLE を必ず足すため。Android は付いた全カテゴリを宣言して
+                いるアクティビティしか起動しないので、MAIN / LAUNCHER だけだと
+                一致せず、ブラウザ側のフォールバック（ウェブ版）に落ちてしまう。
+
+                独自スキームにしているのは、https をそのまま受けるには
+                Digital Asset Links が要り、tmhys.github.io は共用ドメインで
+                置きにくいため。渡ってくる URL は使わない（MainActivity は
+                いつもどおり appUrl を開く）。入口を増やすだけ。
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="kakeibo" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>
