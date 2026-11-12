@@ -9,14 +9,19 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 
 <header class="topbar">
   <h1 id="page-title">ホーム</h1>
   <div class="topbar-actions">
-    <button id="refresh-btn" class="icon-btn" aria-label="最新にする" title="最新にする">↻</button>
+    <button id="refresh-btn" class="icon-btn" aria-label="最新にする" title="最新にする">
+      <svg class="refresh-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M20 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
     <button id="settings-btn" class="icon-btn" aria-label="設定" title="設定">⚙</button>
   </div>
 </header>
