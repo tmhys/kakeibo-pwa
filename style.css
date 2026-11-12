@@ -67,7 +67,11 @@ body {
 }
 .topbar h1 { font-size: 18px; margin: 0; }
 .topbar-actions { display: flex; gap: 8px; }
-#refresh-btn.spinning { animation: spin 1s linear infinite; pointer-events: none; }
+/* 更新中は枠はそのままで、中の矢印だけを回す（ボタンごと回すと四角い枠が回って見える） */
+#refresh-btn { display: inline-flex; align-items: center; justify-content: center; }
+#refresh-btn .refresh-icon { display: block; transform-origin: 50% 50%; }
+#refresh-btn.spinning { pointer-events: none; color: var(--accent); }
+#refresh-btn.spinning .refresh-icon { animation: spin .9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .icon-btn {
