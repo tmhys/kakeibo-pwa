@@ -232,7 +232,8 @@ function contractRowHtml(c, i) {
   if (c.isNew) flags.push('<span class="chip">最近始まった</span>');
   if (c.manual) flags.push('<span class="chip other">明細なし</span>');
   const lastTxt = c.last ? '最終 ' + c.last.date.slice(5).replace('-', '/') + ' ' + yen(c.last.amount) : (c.day ? '支払日 ' + c.day : '');
-  return '<div class="history-row contract-row" data-ci="' + i + '"><div class="row-main"><div class="row-payee">' + escapeHtml(c.name) + '</div>' +
+  const icon = { 住居: '住居', ローン: 'ローン', 保険: '保険', 光熱費: '光熱費', 通信: '通信', '習い事・教育': '教育', サブスク: 'サブスク', '会費・年会費': '会費', 税金: '税' }[c.kind] || 'その他';
+  return '<div class="history-row contract-row" data-ci="' + i + '">' + categoryIcon(icon) + '<div class="row-main"><div class="row-payee">' + escapeHtml(c.name) + '</div>' +
     '<div class="row-sub"><span class="chip other">' + cycleLabel(c) + '</span>' + escapeHtml(lastTxt) + '</div>' +
     (flags.length ? '<div class="row-flags">' + flags.join('') + '</div>' : '') + '</div>' + contractAmountHtml(c) + '</div>';
 }

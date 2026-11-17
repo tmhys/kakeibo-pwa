@@ -1,7 +1,7 @@
 :root {
-  --bg: #f6f7f9;
+  --bg: #f2f3f5;
   --card: #ffffff;
-  --line: #e5e7eb;
+  --line: #ebedf0;
   --text: #1f2937;
   --sub: #6b7280;
   --accent: #0f765c;
@@ -20,9 +20,9 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111418;
-    --card: #1b1f24;
-    --line: #2c333b;
+    --bg: #0e1013;
+    --card: #1a1d22;
+    --line: #2a2f36;
     --text: #e5e7eb;
     --sub: #9aa4b2;
     --accent: #2bb08a;
@@ -472,3 +472,145 @@ textarea { resize: vertical; }
   background: var(--bg); color: var(--text); margin-bottom: 8px;
 }
 .cat-editor .mini-field input { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); }
+
+
+/* =========================================================================
+   見た目の一新（マネーフォワード ME を参考に）
+   - 背景はグレー、内容は白いカード。カードの外に小さな見出し（セクション）
+   - 一覧の行は左にカテゴリのアイコン、右に金額、移動できる行は「›」
+   - 下のタブは線画のアイコン。入力は右下の「＋」
+   ========================================================================= */
+:root {
+  --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .04);
+  --icon-bg: #f0f2f5;
+  /* 支出の内訳の色（検証済みの5色。上位5カテゴリに固定）とその他 */
+  --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; --c0: #a3a9b1;
+  --minus: #c0392b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --shadow: none;
+    --icon-bg: #252a31;
+    --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c0: #5c636c;
+    --minus: #ff7b70;
+  }
+}
+
+body { font-feature-settings: "palt"; }
+.topbar { background: var(--card); border-bottom: 1px solid var(--line); padding: calc(10px + var(--safe-top)) 16px 10px; }
+.topbar h1 { font-size: 17px; font-weight: 700; letter-spacing: .02em; }
+.topbar .icon-btn { border: none; background: transparent; width: 40px; height: 40px; border-radius: 20px; }
+.topbar .icon-btn:active { background: var(--icon-bg); }
+
+.view { padding: 12px 14px calc(96px + var(--safe-bottom)); }
+.card { border: none; border-radius: 14px; box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 12px; }
+.card-title { font-size: 14px; color: var(--text); font-weight: 700; }
+.section-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 13px; font-weight: 700; color: var(--sub); margin: 18px 4px 8px;
+}
+.section-head .link-btn.plain { font-size: 13px; font-weight: 600; }
+
+/* 月の切り替え */
+.month-switch { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 2px 0 10px; }
+.month-switch .month-label { font-size: 16px; font-weight: 700; min-width: 8em; text-align: center; }
+.chev-btn {
+  width: 34px; height: 34px; border-radius: 17px; border: none; background: var(--card); color: var(--text);
+  font-size: 22px; line-height: 1; box-shadow: var(--shadow); cursor: pointer;
+}
+.chev-btn:active { background: var(--icon-bg); }
+
+/* 今月のまとめ */
+.summary-card { text-align: center; padding: 18px 16px 14px; }
+.summary-label { font-size: 13px; color: var(--sub); font-weight: 600; }
+.hero-amount { font-size: 44px; font-weight: 800; letter-spacing: -.01em; margin: 2px 0 2px; }
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.summary-grid > div { display: flex; flex-direction: column; gap: 2px; }
+.summary-grid > div + div { border-left: 1px solid var(--line); }
+.summary-grid .k { font-size: 11px; color: var(--sub); }
+.summary-grid .v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.summary-grid .v.income { color: var(--income); }
+.summary-grid .v.minus { color: var(--minus); }
+.summary-card .sync-note { margin-top: 10px; }
+
+/* 予算 */
+.budget-bar-track { height: 10px; border-radius: 5px; margin: 10px 0 8px; }
+.allowance-card { display: flex; flex-direction: column; align-items: center; }
+
+/* 支出の内訳（区切った帯 + 一覧） */
+.breakdown { margin: 2px 0 12px; }
+.seg-bar { display: flex; gap: 2px; height: 28px; }
+.seg { min-width: 3px; border-radius: 4px; display: flex; align-items: center; padding-left: 6px; overflow: hidden; }
+.seg span { font-size: 11px; font-weight: 700; color: #fff; white-space: nowrap; }
+.seg.s4 span { color: #0b0b0b; }
+.seg.s1, .swatch-dot.s1 { background: var(--c1); }
+.seg.s2, .swatch-dot.s2 { background: var(--c2); }
+.seg.s3, .swatch-dot.s3 { background: var(--c3); }
+.seg.s4, .swatch-dot.s4 { background: var(--c4); }
+.seg.s5, .swatch-dot.s5 { background: var(--c5); }
+.seg.s0, .swatch-dot.s0 { background: var(--c0); }
+.legend-list { display: flex; flex-direction: column; }
+.legend-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 0; border: none; border-top: 1px solid var(--line);
+  background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.legend-row:first-child { border-top: none; }
+.swatch-dot { width: 10px; height: 10px; border-radius: 5px; flex: none; }
+.legend-name { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend-amt { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.legend-pct { width: 3em; text-align: right; font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; }
+.chev { color: var(--sub); font-size: 18px; line-height: 1; flex: none; }
+
+/* 一覧の行（入出金・最近の入出金・定期支払い） */
+.cat-icon {
+  flex: none; width: 34px; height: 34px; border-radius: 17px; background: var(--icon-bg);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 17px; line-height: 1;
+}
+.legend-row .cat-icon { width: 28px; height: 28px; font-size: 14px; }
+.recent-row, .history-row { gap: 12px; padding: 11px 0; justify-content: flex-start; }
+.recent-row .row-main, .history-row .row-main { flex: 1; }
+.row-payee { font-size: 15px; }
+.row-amt { font-size: 15px; font-weight: 700; margin-left: auto; }
+.list-card { padding: 2px 16px; }
+.history-list .card { padding: 2px 16px; }
+.history-date-head { padding: 12px 4px 6px; font-weight: 600; }
+.history-month-head { padding: 20px 4px 4px; }
+
+/* 下のタブ */
+.bottom-nav { border-top: 1px solid var(--line); padding: 6px 4px calc(6px + var(--safe-bottom)); }
+.nav-btn { gap: 3px; padding: 4px 0; color: var(--sub); }
+.nav-btn .nav-icon { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; font-size: 0; }
+.nav-btn span:last-child { font-size: 10.5px; }
+.nav-btn.active { color: var(--accent); font-weight: 700; }
+.nav-btn.active .nav-icon { stroke-width: 2.2; }
+
+/* 右下の入力ボタン */
+.fab {
+  position: fixed; right: 18px; bottom: calc(76px + var(--safe-bottom)); z-index: 11;
+  width: 56px; height: 56px; border-radius: 28px; border: none; cursor: pointer;
+  background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .22);
+  display: flex; align-items: center; justify-content: center;
+}
+.fab svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+.fab:active { transform: scale(.96); }
+.fab.hidden { display: none; }
+
+/* その他（メニュー） */
+.menu-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 0; border: none; border-top: 1px solid var(--line);
+  background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.menu-row:first-child { border-top: none; }
+.menu-text { flex: 1; display: flex; flex-direction: column; font-size: 15px; }
+.menu-text small { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+/* 入力画面・フィルタなど既存の部品の角を揃える */
+.type-btn, .cat-btn, .key, .secondary-btn, .save-btn { border-radius: 12px; }
+.key { background: var(--icon-bg); border: none; }
+.tile { border-radius: 12px; }
+.notice-card { border-radius: 14px; }
+
+/* 行の下の説明は2行まで（Amazon のメモは商品名が長い。全文は詳細シートで見る） */
+.history-row .row-sub, .recent-row .row-sub {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
