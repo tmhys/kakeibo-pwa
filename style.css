@@ -614,3 +614,17 @@ body { font-feature-settings: "palt"; }
 .history-row .row-sub, .recent-row .row-sub {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
+
+/* --- 送れなかった入力・設定のバックアップ --- */
+.draft-row { flex-wrap: wrap; }
+.draft-actions { display: flex; gap: 12px; align-items: center; width: 100%; justify-content: flex-end; }
+.draft-actions .secondary-btn { margin-top: 0; padding: 6px 14px; }
+.link-btn.plain.danger { color: var(--danger); }
+.drafts-notice { display: block; width: 100%; text-align: left; border: 1px solid var(--danger); color: var(--danger);
+  font-size: 14px; font-weight: 600; cursor: pointer; }
+.check-row { display: flex; gap: 8px; align-items: center; justify-content: flex-start; font-size: 14px; margin: 8px 0 4px; }
+.check-row input { flex: 0 0 auto; }
+.check-row input { width: auto; margin: 0; }
+.help-text.warn { color: var(--danger); }
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.button-row .secondary-btn { flex: 1 1 auto; }

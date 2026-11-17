@@ -1,0 +1,18 @@
+# 画面を使わない計算のテスト（月の集計・定期支払いの自動検出）。
+# 集計の期待値は gas（tmhys/gas の rakuten-ledger/test）と同じフィクスチャ。
+name: test
+on:
+  push:
+    paths-ignore: ['android/**', '**.md']
+  pull_request:
+    paths-ignore: ['android/**', '**.md']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: node tests/run.mjs

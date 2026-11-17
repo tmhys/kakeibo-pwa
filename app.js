@@ -21,8 +21,6 @@ const STORE_PREFIX = 'kakeibo:';
 const DEFAULT_CATEGORIES = ['食費', '日用品', '交通費', '医療費', '衣類', 'レジャー', 'サブスク', '家具・家電', '通信費', '交際費', 'その他'];
 const DEFAULT_INCOME_CATEGORIES = ['給与', '還付金', 'お祝い', '副収入', 'その他'];
 const DEFAULT_METHOD = '現金';
-// gas/rakuten-ledger の computeSnapshot_ と同じ定義（支出合計に含めない種別）
-const NON_EXPENSE_TYPES = ['振替', '集計', '収入'];
 // アプリに戻ってきたとき、これより古ければ裏で取り直す
 const STALE_MS = 5 * 60 * 1000;
 // 履歴を1回に描画する件数の目安（日付の途中では切らない）
@@ -146,36 +144,11 @@ async function apiPost(action, payload) {
 // ユーティリティ
 // ---------------------------------------------------------------------------
 
-function yen(n) {
-  const v = Math.round(Number(n) || 0);
-  return (v < 0 ? '-¥' : '¥') + Math.abs(v).toLocaleString('ja-JP');
-}
 
-function todayYm() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-}
 
-function todayYmd() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
 
-function ymAdd(ym, delta) {
-  const [y, m] = ym.split('-').map(Number);
-  const d = new Date(y, m - 1 + delta, 1);
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-}
 
-function ymLabel(ym) {
-  const [y, m] = ym.split('-').map(Number);
-  return y + '年' + m + '月';
-}
 
-function daysInMonth(ym) {
-  const [y, m] = ym.split('-').map(Number);
-  return new Date(y, m, 0).getDate();
-}
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 function ymdLabel(ymd) {
@@ -183,13 +156,6 @@ function ymdLabel(ymd) {
   return m + '/' + d + '（' + WEEKDAYS[new Date(y, m - 1, d).getDay()] + '）';
 }
 
-/**
- * 検索用の正規化。カード明細は半角カナ（ﾄﾞﾄｰﾙ）、通知は全角（ドトール）で来るので、
- * NFKC で揃えて大文字小文字と空白を無視する。
- */
-function norm(s) {
-  return String(s == null ? '' : s).normalize('NFKC').toLowerCase().replace(/[\s　]+/g, '');
-}
 
 // 一覧の行の左に出すカテゴリのアイコン。色はグラフの色と混ざらないよう中立にし、形（絵）で見分ける
 const CATEGORY_ICONS = [
@@ -207,15 +173,7 @@ function categoryIcon(t) {
   return '<span class="cat-icon" aria-hidden="true">' + (hit ? hit[1] : '🧾') + '</span>';
 }
 
-function isExpense(t) {
-  // カテゴリが「振替」なのに種別が支出のままの行（古い取り込み）も支出に数えない。
-  // gas のメニュー「支出を振替に直す」でシート側も直せる
-  return NON_EXPENSE_TYPES.indexOf(t.type) === -1 && t.category !== '振替';
-}
 
-function sumAmount(list) {
-  return list.reduce((a, t) => a + t.amount, 0);
-}
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
@@ -427,34 +385,10 @@ function renderCurrentView() {
 
 let homeYm = todayYm();
 
+// 月の集計は core.js の snapshotOf（gas と同じ計算。tests/ で両方を確かめる）
 function computeSnapshot(ym) {
-  const monthTxs = store.byMonth.get(ym) || [];
-  const cur = monthTxs.filter(isExpense);
-  const prev = (store.byMonth.get(ymAdd(ym, -1)) || []).filter(isExpense);
   const day = ym === todayYm() ? new Date().getDate() : daysInMonth(ym);
-  const prevToDate = prev.filter((t) => Number(t.date.slice(8, 10)) <= day);
-
-  const total = sumAmount(cur);
-  const diffToDate = total - sumAmount(prevToDate);
-
-  const catMap = new Map();
-  cur.forEach((t) => catMap.set(t.category, (catMap.get(t.category) || 0) + t.amount));
-  const categories = Array.from(catMap, ([name, amount]) => ({ name, amount }))
-    .sort((a, b) => b.amount - a.amount);
-
-  const uncat = cur.filter((t) => !t.category || t.category === '未分類');
-  const income = monthTxs.filter((t) => t.type === '収入');
-  const projected = day > 0 ? Math.round(total / day * daysInMonth(ym)) : 0;
-
-  return {
-    total,
-    diffToDate,
-    projected,
-    categories,
-    uncat: { count: uncat.length, amount: sumAmount(uncat) },
-    income: { count: income.length, total: sumAmount(income) },
-    recent: cur.slice(0, 5), // byMonth は日付の新しい順
-  };
+  return snapshotOf((m) => store.byMonth.get(m), ym, day);
 }
 
 function renderHome() {
@@ -872,6 +806,7 @@ function initEntryView() {
   renderCategoryGrid();
   renderAmount();
   renderQuickPicks(); // features2.js
+  renderDrafts();
 }
 
 function renderEntryType() {
@@ -952,21 +887,112 @@ document.getElementById('entry-save').addEventListener('click', async () => {
   try {
     const res = await apiPostManualEntry(payload);
     showToast('✅ ' + res.message);
-    sessionSaved.unshift({ payee, amount, category: res.category, type: res.type, date: payload.date });
-    renderSessionSaved();
-    // 連続入力しやすいよう、金額とメモ・利用先だけリセット（カテゴリ・決済手段は保持）
-    entryState.amountStr = '';
-    renderAmount();
-    document.getElementById('entry-payee').value = '';
-    document.getElementById('entry-memo').value = '';
-    // ホーム・履歴に反映するため裏で取り直す（入力画面の操作は止めない）
-    refreshData();
+    noteSaved(payload, res);
+    refreshData(); // ホーム・履歴に反映するため裏で取り直す（入力画面の操作は止めない）
   } catch (e) {
-    showToast(String(e.message || e), 'ng');
+    // 送れなかった入力は消さずに下書きへ（電波の悪い店先でも打ち直さなくて済むように）
+    addDraft(payload, String(e.message || e));
+    showToast('送れなかったので下書きに残しました（' + String(e.message || e) + '）', 'ng');
   } finally {
+    clearEntryInputs();
     btn.disabled = false; btn.textContent = '保存';
   }
 });
+
+function noteSaved(payload, res) {
+  sessionSaved.unshift({ payee: payload.payee, amount: payload.amount, category: res.category, type: res.type, date: payload.date });
+  renderSessionSaved();
+}
+
+// 連続入力しやすいよう、金額とメモ・利用先だけリセット（カテゴリ・決済手段は保持）
+function clearEntryInputs() {
+  entryState.amountStr = '';
+  renderAmount();
+  document.getElementById('entry-payee').value = '';
+  document.getElementById('entry-memo').value = '';
+}
+
+// ---------------------------------------------------------------------------
+// 送れなかった入力（下書き）
+//
+// 保存に失敗した入力はこの端末の localStorage に残し、入力画面の上に「送れなかった入力」として
+// 出す。再送は人が押したときだけ（応答だけが届かず実は保存できていた場合に、勝手に二重登録しないため）。
+// ---------------------------------------------------------------------------
+
+function loadDrafts() { return loadJson_('drafts', []); }
+function storeDrafts(list) {
+  try { localStorage.setItem(STORE_PREFIX + 'drafts', JSON.stringify(list)); } catch (e) { /* noop */ }
+  renderDrafts();
+}
+function addDraft(payload, error) {
+  const list = loadDrafts();
+  list.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2, 6), payload, error, at: new Date().toISOString() });
+  storeDrafts(list);
+}
+
+function renderDrafts() {
+  const list = loadDrafts();
+  const card = document.getElementById('entry-drafts');
+  if (!card) return;
+  card.classList.toggle('hidden', !list.length);
+  const menuBadge = document.getElementById('menu-drafts');
+  if (menuBadge) {
+    menuBadge.classList.toggle('hidden', !list.length);
+    menuBadge.textContent = '送れなかった入力が ' + list.length + '件あります →';
+  }
+  const el = document.getElementById('entry-drafts-list');
+  el.innerHTML = '';
+  if (!list.length) return;
+  document.getElementById('entry-drafts-title').textContent = '送れなかった入力（' + list.length + '件）';
+  list.forEach((d) => {
+    const p = d.payload;
+    const row = document.createElement('div');
+    row.className = 'recent-row draft-row';
+    row.innerHTML =
+      '<div class="row-main"><div class="row-payee">' + escapeHtml(p.payee) + '</div>' +
+      '<div class="row-sub">' + escapeHtml(p.date) + ' · ' + escapeHtml(p.category) + ' · ' + escapeHtml(d.error || '') + '</div></div>' +
+      '<div class="row-amt' + (p.type === 'income' ? ' income' : '') + '">' + (p.type === 'income' ? '+' : '') + yen(p.amount) + '</div>' +
+      '<div class="draft-actions"><button class="secondary-btn" data-act="send">再送</button>' +
+      '<button class="link-btn plain danger" data-act="del">削除</button></div>';
+    row.querySelector('[data-act="send"]').onclick = () => sendDrafts([d.id]);
+    row.querySelector('[data-act="del"]').onclick = () => {
+      if (!confirm(p.payee + ' ' + yen(p.amount) + ' の下書きを消しますか？')) return;
+      storeDrafts(loadDrafts().filter((x) => x.id !== d.id));
+    };
+    el.appendChild(row);
+  });
+}
+
+let sendingDrafts = false;
+async function sendDrafts(ids) {
+  if (sendingDrafts) return;
+  sendingDrafts = true;
+  const btn = document.getElementById('entry-drafts-send');
+  btn.disabled = true;
+  let ok = 0;
+  let ng = 0;
+  try {
+    for (const id of ids) {
+      const d = loadDrafts().find((x) => x.id === id);
+      if (!d) continue;
+      try {
+        const res = await apiPostManualEntry(d.payload);
+        noteSaved(d.payload, res);
+        storeDrafts(loadDrafts().filter((x) => x.id !== id));
+        ok++;
+      } catch (e) {
+        storeDrafts(loadDrafts().map((x) => (x.id === id ? Object.assign({}, x, { error: String(e.message || e) }) : x)));
+        ng++;
+      }
+    }
+  } finally {
+    sendingDrafts = false;
+    btn.disabled = false;
+  }
+  if (ok) refreshData();
+  showToast(ng ? '送れたもの ' + ok + '件・まだ送れないもの ' + ng + '件' : '✅ ' + ok + '件を保存しました', ng ? 'ng' : undefined);
+}
+document.getElementById('entry-drafts-send').addEventListener('click', () => sendDrafts(loadDrafts().map((d) => d.id)));
 
 function renderSessionSaved() {
   const el = document.getElementById('entry-recent');
@@ -1010,6 +1036,7 @@ document.getElementById('recent-all').addEventListener('click', () => openHistor
 document.getElementById('breakdown-all').addEventListener('click', () => openHistoryWith({ month: homeYm, type: 'expense' }));
 
 function initMenuView() {
+  renderDrafts();
   document.getElementById('menu-info').textContent =
     (store.updatedAt ? 'データ更新 ' + store.updatedAt : '') + (window.KakeiboApp ? '・アプリ版 ' + window.KakeiboApp.version() : '');
 }

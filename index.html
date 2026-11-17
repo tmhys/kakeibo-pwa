@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 
@@ -246,6 +246,16 @@
     </div>
   </section>
 
+  <section id="entry-drafts" class="card drafts-card hidden">
+    <div class="card-title-row">
+      <div class="card-title" id="entry-drafts-title">送れなかった入力</div>
+      <button id="entry-drafts-send" class="link-btn plain">すべて再送</button>
+    </div>
+    <p class="help-text">通信できずに保存できなかった入力です。この端末にだけ残っています。
+      電波のあるところで「再送」してください（保存できていたかもしれないときは、先に入出金で確かめてから）。</p>
+    <div id="entry-drafts-list" class="recent-list"></div>
+  </section>
+
   <section id="quick-picks" class="card quick-picks"></section>
 
   <section class="card">
@@ -320,6 +330,7 @@
 </main>
 
 <main id="view-menu" class="view hidden">
+  <button id="menu-drafts" class="card notice-card drafts-notice hidden"></button>
   <div class="section-head"><span>家計</span></div>
   <section class="card list-card menu-list">
     <button class="menu-row" data-go="fixed"><span class="cat-icon">🔁</span><span class="menu-text">定期支払い<small>サブスク・保険・光熱費など契約中のもの</small></span><span class="chev">›</span></button>
@@ -363,6 +374,25 @@
   </section>
 
   <button id="set-save" class="save-btn">設定を保存</button>
+
+  <section class="card">
+    <div class="card-title">設定のバックアップ</div>
+    <p class="help-text">接続先・既定の決済手段・カテゴリ・予算をまとめて書き出し、別の端末やアプリに読み込めます。
+      保存済みの設定が対象です（いま画面で直した分は、先に「設定を保存」してから）。</p>
+    <label class="check-row"><input id="set-export-token" type="checkbox"> トークンも含める</label>
+    <p class="help-text warn">トークンを含めたファイルは、家計簿を読み書きできる鍵と同じです。人に渡したり
+      共有フォルダに置いたりしないでください。漏れたときは README の「トークンを変える」の手順で変えます。</p>
+    <div class="button-row">
+      <button id="set-export" class="secondary-btn">書き出す</button>
+      <button id="set-export-copy" class="secondary-btn">コピー</button>
+      <button id="set-import" class="secondary-btn">ファイルから読み込む</button>
+      <input id="set-import-file" type="file" accept=".json,application/json,text/plain" class="hidden">
+    </div>
+    <label class="field-label">内容（読み込むときは、ここに貼り付けて「貼り付けた内容を読み込む」）</label>
+    <textarea id="set-backup-text" rows="5" spellcheck="false" autocomplete="off"></textarea>
+    <button id="set-import-text" class="secondary-btn">貼り付けた内容を読み込む</button>
+    <div id="set-backup-result" class="test-result"></div>
+  </section>
 </main>
 
 <nav class="bottom-nav">
@@ -386,11 +416,12 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js?v=10"></script>
+<script src="core.js?v=12"></script>
+<script src="app.js?v=12"></script>
 <script src="analysis.js?v=10"></script>
 <script src="import.js?v=10"></script>
 <script src="features.js?v=10"></script>
-<script src="features2.js?v=10"></script>
+<script src="features2.js?v=11"></script>
 <script src="contracts.js?v=10"></script>
 </body>
 </html>
