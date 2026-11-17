@@ -269,3 +269,131 @@ function renderDataCheck() {
   const b = document.getElementById('check-uncat');
   if (b) b.onclick = () => openHistoryWith({ category: '未分類', type: 'expense' });
 }
+
+// ---------------------------------------------------------------------------
+// 設定のバックアップ（書き出し・読み込み）
+//
+// 端末を替えたとき・ブラウザ版とアプリ版の両方で使うときに、設定を打ち直さなくて済むように。
+// 対象は localStorage に保存済みの設定（接続先・既定の決済手段・カテゴリ・予算）。
+// トークンは「含める」に印をつけたときだけ書き出す。
+// ---------------------------------------------------------------------------
+
+const BACKUP_KIND = 'kakeibo-settings';
+
+function settingsBackup(includeToken) {
+  const s = getSettings();
+  const b = loadBudgetSettings();
+  const out = {
+    kind: BACKUP_KIND, version: 1, exportedAt: new Date().toISOString(),
+    baseUrl: s.baseUrl, method: s.method, categories: s.categories, incomeCategories: s.incomeCategories,
+    budgetTotal: b.total, categoryBudgets: b.cats,
+  };
+  if (includeToken) out.token = s.token;
+  return out;
+}
+
+/** 読み込む内容を確かめて、保存できる形に直す。おかしければ Error（純関数に近い: 画面に触れない） */
+function parseSettingsBackup(text) {
+  let o;
+  try { o = JSON.parse(String(text || '').trim().replace(/^\uFEFF/, '')); } catch (e) { throw new Error('JSON として読めません'); }
+  if (!o || o.kind !== BACKUP_KIND) throw new Error('家計簿の設定ファイルではないようです');
+  const strList = (v) => (Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : null);
+  const patch = {};
+  if (typeof o.baseUrl === 'string' && o.baseUrl.trim()) {
+    if (!/^https:\/\//.test(o.baseUrl.trim())) throw new Error('WebApp URL が https で始まっていません');
+    patch.baseUrl = o.baseUrl.trim();
+  }
+  if (typeof o.token === 'string' && o.token.trim()) patch.token = o.token.trim();
+  if (typeof o.method === 'string' && o.method.trim()) patch.method = o.method.trim();
+  const cats = strList(o.categories);
+  if (cats && cats.length) patch.categories = cats;
+  const inc = strList(o.incomeCategories);
+  if (inc && inc.length) patch.incomeCategories = inc;
+  const budget = {};
+  if (o.budgetTotal !== undefined) budget.total = Math.max(0, Number(o.budgetTotal) || 0);
+  if (o.categoryBudgets && typeof o.categoryBudgets === 'object' && !Array.isArray(o.categoryBudgets)) {
+    budget.cats = {};
+    Object.keys(o.categoryBudgets).forEach((k) => {
+      const n = Number(o.categoryBudgets[k]);
+      if (k.trim() && n > 0) budget.cats[k.trim()] = n;
+    });
+  }
+  return { patch, budget };
+}
+
+function backupResult(msg, kind) {
+  const el = document.getElementById('set-backup-result');
+  el.textContent = msg;
+  el.className = 'test-result' + (kind ? ' ' + kind : '');
+}
+
+function exportSettingsText() {
+  const text = JSON.stringify(settingsBackup(document.getElementById('set-export-token').checked), null, 2);
+  document.getElementById('set-backup-text').value = text;
+  return text;
+}
+
+document.getElementById('set-export').addEventListener('click', () => {
+  const text = exportSettingsText();
+  const name = 'kakeibo-settings-' + todayYmd() + '.json';
+  if (window.KakeiboApp && window.KakeiboApp.saveFile) {
+    window.KakeiboApp.saveFile(name, text);
+  } else {
+    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  backupResult('書き出しました（下の欄にも同じ内容）', 'ok');
+});
+
+document.getElementById('set-export-copy').addEventListener('click', async () => {
+  const text = exportSettingsText();
+  try {
+    await navigator.clipboard.writeText(text);
+    backupResult('コピーしました。別の端末の設定画面で貼り付けて読み込んでください', 'ok');
+  } catch (e) {
+    const ta = document.getElementById('set-backup-text');
+    ta.focus(); ta.select();
+    backupResult('自動でコピーできなかったので、下の欄を長押ししてコピーしてください', 'ng');
+  }
+});
+
+function importSettingsText(text) {
+  let r;
+  try { r = parseSettingsBackup(text); } catch (e) { backupResult('✕ ' + e.message, 'ng'); return; }
+  const items = [];
+  if (r.patch.baseUrl) items.push('接続先');
+  if (r.patch.token) items.push('トークン');
+  if (r.patch.method) items.push('決済手段');
+  if (r.patch.categories || r.patch.incomeCategories) items.push('カテゴリ');
+  if (r.budget.total !== undefined || r.budget.cats) items.push('予算');
+  if (!items.length) { backupResult('✕ 読み込める設定がありません', 'ng'); return; }
+  if (!confirm(items.join('・') + ' を読み込んで、いまの設定を置き換えます。よろしいですか？')) return;
+  const before = getSettings();
+  saveSettings(r.patch);
+  if (r.budget.total !== undefined) localStorage.setItem(STORE_PREFIX + 'budgetTotal', String(r.budget.total));
+  if (r.budget.cats) localStorage.setItem(STORE_PREFIX + 'categoryBudgets', JSON.stringify(r.budget.cats));
+  initSettingsView();
+  backupResult('✅ ' + items.join('・') + ' を読み込みました' + (r.patch.token ? '' : '（トークンは含まれていないので、そのまま）'), 'ok');
+  const after = getSettings();
+  if ((before.baseUrl !== after.baseUrl || before.token !== after.token) && isConfigured()) {
+    clearCache();
+    refreshData();
+  }
+}
+
+document.getElementById('set-import-text').addEventListener('click', () => importSettingsText(document.getElementById('set-backup-text').value));
+document.getElementById('set-import').addEventListener('click', () => document.getElementById('set-import-file').click());
+document.getElementById('set-import-file').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  const text = await f.text();
+  document.getElementById('set-backup-text').value = text;
+  importSettingsText(text);
+});
+
+// 「その他」の「送れなかった入力」から入力画面へ
+document.getElementById('menu-drafts').addEventListener('click', () => showView('entry'));
